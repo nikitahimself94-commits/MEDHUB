@@ -81,10 +81,12 @@ export default async function DashboardPage() {
       {/* Hero: AI-first greeting */}
       <div className="rounded-2xl card p-6">
         <p className="text-lg font-bold" style={{ color: "#1A2F2B" }}>
-          {displayName}, вот ваша сводка
+          {hasData ? `${displayName}, вот ваша сводка` : `${displayName}, я ваш медицинский помощник`}
         </p>
         <p className="mt-1 text-sm" style={{ color: "#5A8F85" }}>
-          AI анализирует ваши данные и помогает разобраться в состоянии здоровья
+          {hasData
+            ? "На основе ваших данных — состояние, лекарства, последние записи"
+            : "Я буду анализировать ваши данные и помогать разбираться в здоровье"}
         </p>
 
         {/* AI status summary - brief snapshot */}
@@ -103,13 +105,21 @@ export default async function DashboardPage() {
         )}
 
         {!hasData && (
-          <div className="mt-4 rounded-xl p-4" style={{ backgroundColor: "rgba(45,110,106,0.05)" }}>
-            <p className="text-sm font-medium" style={{ color: "#2D6E6A" }}>С чего начать?</p>
-            <ol className="mt-2 space-y-1 text-sm" style={{ color: "#3D6B62" }}>
-              <li>1. <Link href="/profile" className="underline font-medium">Заполните карточку</Link> — группа крови, аллергии</li>
-              <li>2. <Link href="/medications" className="underline font-medium">Добавьте лекарства</Link> — текущие препараты</li>
-              <li>3. <Link href="/diary" className="underline font-medium">Запишите самочувствие</Link> — первая запись в дневнике</li>
-            </ol>
+          <div className="mt-5 rounded-xl p-5" style={{ backgroundColor: "rgba(45,110,106,0.05)" }}>
+            <p className="text-[15px] leading-relaxed" style={{ color: "#2D5A54" }}>
+              Пока данных мало, но я уже готов помогать. Добавьте первые сведения о себе — и я соберу для вас общую картину.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/profile" className="rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:shadow-md" style={{ backgroundColor: "#2D6E6A" }}>
+                Заполнить карточку
+              </Link>
+              <Link href="/medications" className="rounded-full px-4 py-2 text-sm font-semibold transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
+                Добавить лекарства
+              </Link>
+              <Link href="/diary" className="rounded-full px-4 py-2 text-sm font-semibold transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
+                Записать самочувствие
+              </Link>
+            </div>
           </div>
         )}
       </div>
