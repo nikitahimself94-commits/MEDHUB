@@ -41,7 +41,7 @@ export default async function AiPlanPage() {
 
       <div className="mt-6 rounded-xl card p-5">
         <h3 className="text-base font-semibold text-gray-900">Ваш текущий лимит</h3>
-        <div className="mt-3 grid grid-cols-3 gap-4">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           <div className="rounded bg-gray-50 p-3 text-center">
             <p className="text-2xl font-bold text-gray-900">{AI_MONTHLY_LIMIT}</p>
             <p className="mt-1 text-xs text-gray-500">доступно за 30 дней</p>

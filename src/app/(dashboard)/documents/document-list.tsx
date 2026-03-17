@@ -37,7 +37,7 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
 
   return (
     <div>
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
         <input
           type="text"
           value={search}
@@ -120,7 +120,7 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
                 </div>
               )}
 
-              <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-2">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-2">
                 <div className="flex items-center gap-4">
                   {doc.file_url && (
                     <FileLink storagePath={doc.file_url} fileName={doc.file_name} />

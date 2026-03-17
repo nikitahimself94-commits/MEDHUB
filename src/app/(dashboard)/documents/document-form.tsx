@@ -124,7 +124,7 @@ export function DocumentForm() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <div>
           <label className={labelClass}>Дата документа</label>
           <input
@@ -160,7 +160,7 @@ export function DocumentForm() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <div>
           <label className={labelClass}>Врач</label>
           <input
@@ -181,7 +181,7 @@ export function DocumentForm() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <div>
           <label className={labelClass}>Статус</label>
           <select

@@ -43,3 +43,5 @@ supabase/.branches/
 # large files - not for git
 *.pdf
 *.docx
+
+.vercel

@@ -55,13 +55,13 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen" style={{ background: "#C5CECA" }}>
       <TimezoneSetter />
-      <header style={{ backgroundColor: "#2D6E6A" }} className="px-6 pt-4 pb-3">
+      <header style={{ backgroundColor: "#2D6E6A" }} className="px-4 sm:px-6 pt-3 sm:pt-4 pb-2 sm:pb-3">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <h1 className="text-lg font-bold tracking-[0.15em] text-white">
+          <h1 className="text-base sm:text-lg font-bold tracking-[0.15em] text-white">
             MEDHUB
           </h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span className="hidden sm:inline text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
               {profile.display_name || user.email}
               {profile.role && (
                 <span
@@ -88,7 +88,7 @@ export default async function DashboardLayout({
         </div>
       </header>
       <DashboardNav />
-      <div className="mx-auto max-w-5xl px-6 py-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-5 sm:py-8">
         {children}
       </div>
     </div>

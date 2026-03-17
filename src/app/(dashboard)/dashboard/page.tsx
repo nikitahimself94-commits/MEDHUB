@@ -139,7 +139,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Stats row */}
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl card p-4 text-center">
           <p className="text-2xl font-bold text-brand-900">{activeMedCount}</p>
           <p className="mt-1 text-xs text-gray-500">

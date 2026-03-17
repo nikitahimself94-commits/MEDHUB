@@ -157,9 +157,9 @@ function MedicationCard({
       }`}
     >
       {/* Row 1: Name + dosage + status badge + today badge */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="truncate text-base font-semibold text-gray-900">{med.name}</span>
+          <span className="truncate text-sm sm:text-base font-semibold text-gray-900">{med.name}</span>
           {med.dosage && (
             <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
               {med.dosage}

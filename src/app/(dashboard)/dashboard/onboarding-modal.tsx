@@ -24,7 +24,7 @@ export function OnboardingModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div
-        className="w-full max-w-md rounded-2xl p-8"
+        className="w-full max-w-md rounded-2xl p-5 sm:p-8 max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: "#FAFBFB" }}
       >
         <h2

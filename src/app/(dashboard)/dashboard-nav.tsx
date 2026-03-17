@@ -23,21 +23,17 @@ export function DashboardNav() {
 
   return (
     <nav
+      className="overflow-x-auto lg:overflow-x-visible"
       style={{
         backgroundColor: "#CDD5D2",
         borderBottom: "1px solid #BFC8C5",
-        padding: "10px 0",
+        padding: "8px 0",
+        WebkitOverflowScrolling: "touch",
       }}
     >
       <div
-        className="mx-auto max-w-5xl"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "4px",
-          padding: "0 12px",
-        }}
+        className="mx-auto flex max-w-5xl items-center lg:justify-center"
+        style={{ gap: "4px", padding: "0 12px", minWidth: "max-content" }}
       >
         {NAV_ITEMS.map(({ href, label }) => {
           const isActive = pathname === href;
@@ -45,8 +41,8 @@ export function DashboardNav() {
             <Link
               key={href}
               href={href}
+              className="shrink-0 whitespace-nowrap"
               style={{
-                flexShrink: 0,
                 padding: "7px 12px",
                 borderRadius: "8px",
                 fontSize: "13px",
@@ -64,18 +60,6 @@ export function DashboardNav() {
                       backgroundColor: "transparent",
                       color: "#4A7A72",
                     }),
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = "#E4ECEA";
-                  e.currentTarget.style.color = "#2D5A54";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#4A7A72";
-                }
               }}
             >
               {label}
