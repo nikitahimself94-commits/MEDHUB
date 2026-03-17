@@ -4,57 +4,67 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Главная" },
-  { href: "/profile", label: "Карта" },
-  { href: "/medications", label: "Лекарства" },
-  { href: "/diary", label: "Дневник" },
-  { href: "/vitals", label: "Показатели" },
-  { href: "/emotions", label: "Эмоции" },
-  { href: "/symptoms-map", label: "Симптомы" },
-  { href: "/timeline", label: "Хронология" },
+  { href: "/dashboard", label: "Сводка" },
+  { href: "/records", label: "Записи" },
   { href: "/documents", label: "Документы" },
   { href: "/doctor-visit", label: "Врач" },
-  { href: "/ai-chat", label: "AI-чат" },
-  { href: "/ai-plan", label: "AI-план" },
 ];
 
 export function DashboardNav() {
   const pathname = usePathname();
 
+  // Match sub-routes to parent nav items
+  function isActive(href: string) {
+    if (href === "/dashboard") return pathname === "/dashboard";
+    if (href === "/records") {
+      return pathname === "/records" ||
+        pathname === "/diary" ||
+        pathname === "/medications" ||
+        pathname === "/vitals" ||
+        pathname === "/emotions" ||
+        pathname === "/symptoms-map" ||
+        pathname === "/timeline" ||
+        pathname === "/profile" ||
+        pathname === "/ai-chat" ||
+        pathname === "/ai-plan";
+    }
+    if (href === "/documents") return pathname === "/documents";
+    if (href === "/doctor-visit") return pathname === "/doctor-visit";
+    return pathname === href;
+  }
+
   return (
     <nav
-      className="overflow-x-auto lg:overflow-x-visible"
       style={{
         backgroundColor: "#CDD5D2",
         borderBottom: "1px solid #BFC8C5",
         padding: "8px 0",
-        WebkitOverflowScrolling: "touch",
       }}
     >
       <div
-        className="mx-auto flex max-w-5xl items-center lg:justify-center"
-        style={{ gap: "4px", padding: "0 12px", minWidth: "max-content" }}
+        className="mx-auto flex max-w-5xl items-center justify-center"
+        style={{ gap: "6px", padding: "0 16px" }}
       >
         {NAV_ITEMS.map(({ href, label }) => {
-          const isActive = pathname === href;
+          const active = isActive(href);
           return (
             <Link
               key={href}
               href={href}
-              className="shrink-0 whitespace-nowrap"
+              className="flex-1 text-center"
               style={{
-                padding: "7px 12px",
-                borderRadius: "8px",
-                fontSize: "13px",
-                fontWeight: 600,
+                padding: "10px 16px",
+                borderRadius: "10px",
+                fontSize: "15px",
+                fontWeight: 700,
                 letterSpacing: "0.01em",
                 transition: "all 0.15s",
                 textDecoration: "none",
-                ...(isActive
+                ...(active
                   ? {
                       backgroundColor: "#2D6E6A",
                       color: "#FFFFFF",
-                      boxShadow: "0 1px 3px rgba(45,110,106,0.2)",
+                      boxShadow: "0 2px 6px rgba(45,110,106,0.25)",
                     }
                   : {
                       backgroundColor: "transparent",
