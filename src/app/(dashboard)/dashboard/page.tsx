@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSessionPatient } from "@/lib/get-patient-id";
-import { getAiUsageCount, AI_MONTHLY_LIMIT } from "@/lib/check-ai-quota";
+import { getAiUsageCount } from "@/lib/check-ai-quota";
 import { AiUsageStatus } from "@/components/ai-usage-status";
 import { OnboardingModal } from "./onboarding-modal";
 import type { SupabaseClient } from "@supabase/supabase-js";
