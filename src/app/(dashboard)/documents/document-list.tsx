@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import type { Document, DocumentParse, DocumentOpinion } from "@/types/database";
 import { FileLink } from "./file-link";
 import { DeleteDocumentButton } from "./delete-document-button";
@@ -35,8 +36,25 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
     });
   }, [documents, search, category]);
 
+  if (documents.length === 0) {
+    return (
+      <div
+        className="rounded-2xl px-6 py-8 text-center"
+        style={{ backgroundColor: "rgba(45,110,106,0.03)", border: "1px dashed #BFC8C5" }}
+      >
+        <p className="text-sm font-medium" style={{ color: "#2D5A54" }}>
+          Загрузите первый документ — и AI начнёт работать
+        </p>
+        <p className="mt-1 text-xs" style={{ color: "#5A8F85" }}>
+          Подойдёт любой анализ, выписка или заключение. Даже старый — это уже ценный контекст.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
+      {/* Search / filter */}
       <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
         <input
           type="text"
@@ -57,17 +75,8 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
         </select>
       </div>
 
-      <div className="mt-4 space-y-3">
-        {documents.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center">
-            <p className="text-sm font-medium text-gray-600">Документов пока нет</p>
-            <p className="mt-1 text-xs text-gray-400">
-              Нажмите «+ Добавить документ», чтобы загрузить первый результат анализа, заключение или снимок
-            </p>
-          </div>
-        )}
-
-        {documents.length > 0 && filtered.length === 0 && (
+      <div className="mt-4 space-y-4">
+        {filtered.length === 0 && (
           <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-8 text-center">
             <p className="text-sm font-medium text-gray-600">Ничего не найдено</p>
             <p className="mt-1 text-xs text-gray-400">
@@ -78,11 +87,21 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
 
         {filtered.map((doc) => {
           const st = STATUS_LABELS[doc.status] ?? STATUS_LABELS.normal;
+          const hasParse = !!parseMap[doc.id];
+          const hasOpinion = !!opinionMap[doc.id];
+          const hasAiResults = hasParse || hasOpinion;
+
           return (
-            <div key={doc.id} className="rounded-xl card p-4">
-              <div className="flex items-baseline justify-between">
-                <div className="flex items-baseline gap-2">
-                  <span className="font-medium text-gray-900">{doc.title}</span>
+            <div key={doc.id} className="rounded-xl card overflow-hidden">
+              {/* Document header */}
+              <div className="p-4">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="font-medium truncate max-w-full" style={{ color: "#1A2F2B" }}>{doc.title}</span>
+                  <span className="shrink-0 ml-auto text-xs" style={{ color: "#8AA8A2" }}>
+                    {new Date(doc.document_date).toLocaleDateString("ru-RU")}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   {doc.category && (
                     <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600">
                       {doc.category}
@@ -92,56 +111,95 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
                     {st.text}
                   </span>
                 </div>
-                <span className="shrink-0 text-xs text-gray-400">
-                  {new Date(doc.document_date).toLocaleDateString("ru-RU")}
-                </span>
-              </div>
 
-              {(doc.doctor || doc.lab) && (
-                <div className="mt-1 text-sm text-gray-500">
-                  {[doc.doctor, doc.lab].filter(Boolean).join(" · ")}
-                </div>
-              )}
+                {(doc.doctor || doc.lab) && (
+                  <p className="mt-1 text-sm" style={{ color: "#8AA8A2" }}>
+                    {[doc.doctor, doc.lab].filter(Boolean).join(" · ")}
+                  </p>
+                )}
 
-              {doc.notes && (
-                <p className="mt-2 text-sm text-gray-700">{doc.notes}</p>
-              )}
+                {doc.notes && (
+                  <p className="mt-2 text-sm" style={{ color: "#3D6B62" }}>{doc.notes}</p>
+                )}
 
-              {doc.tags.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {doc.tags.map((t, i) => (
+                {doc.tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {doc.tags.map((t, i) => (
+                      <span
+                        key={i}
+                        className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs text-brand-700"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* AI actions — elevated */}
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {doc.file_url && !hasParse && (
+                    <ParseDocumentButton documentId={doc.id} />
+                  )}
+                  {hasParse && (
                     <span
-                      key={i}
-                      className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs text-brand-700"
+                      className="rounded-full px-2.5 py-1 text-xs font-medium"
+                      style={{ backgroundColor: "rgba(45,110,106,0.08)", color: "#2D6E6A" }}
                     >
-                      {t}
+                      Разобран
                     </span>
-                  ))}
+                  )}
+                  {!hasOpinion && (
+                    <SecondOpinionButton documentId={doc.id} />
+                  )}
+                  {hasOpinion && (
+                    <span
+                      className="rounded-full px-2.5 py-1 text-xs font-medium"
+                      style={{ backgroundColor: "rgba(100,116,139,0.08)", color: "#475569" }}
+                    >
+                      Второе мнение получено
+                    </span>
+                  )}
                 </div>
-              )}
 
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-2">
-                <div className="flex items-center gap-4">
+                {/* Secondary actions */}
+                <div className="mt-2 flex items-center gap-3 text-xs">
                   {doc.file_url && (
                     <FileLink storagePath={doc.file_url} fileName={doc.file_name} />
                   )}
-                  {doc.file_url && (
-                    <span className="text-gray-300">·</span>
-                  )}
-                  {doc.file_url && (
-                    <ParseDocumentButton documentId={doc.id} />
-                  )}
-                  <SecondOpinionButton documentId={doc.id} />
+                  <DeleteDocumentButton id={doc.id} />
                 </div>
-                <DeleteDocumentButton id={doc.id} />
               </div>
 
-              {parseMap[doc.id] && (
-                <ParseResult parse={parseMap[doc.id]} />
-              )}
-
-              {opinionMap[doc.id] && (
-                <OpinionResult opinion={opinionMap[doc.id]} />
+              {/* AI results — full-width blocks below the card body */}
+              {hasAiResults && (
+                <div className="border-t" style={{ borderColor: "rgba(45,110,106,0.1)" }}>
+                  {parseMap[doc.id] && (
+                    <div className="p-4">
+                      <ParseResult parse={parseMap[doc.id]} />
+                    </div>
+                  )}
+                  {opinionMap[doc.id] && (
+                    <div className="p-4 pt-0">
+                      <OpinionResult opinion={opinionMap[doc.id]} />
+                    </div>
+                  )}
+                  <div
+                    className="px-4 pb-4 pt-1 border-t"
+                    style={{ borderColor: "rgba(45,110,106,0.08)" }}
+                  >
+                    <Link
+                      href="/ai-chat"
+                      className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition hover:shadow-sm"
+                      style={{
+                        backgroundColor: "rgba(45,110,106,0.06)",
+                        color: "#2D6E6A",
+                        border: "1px solid rgba(45,110,106,0.12)",
+                      }}
+                    >
+                      Обсудить с AI-помощником →
+                    </Link>
+                  </div>
+                </div>
               )}
             </div>
           );

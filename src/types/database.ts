@@ -177,7 +177,8 @@ export type AiFeatureName =
   | "ai_chat"
   | "document_parse"
   | "document_second_opinion"
-  | "doctor_visit_prep";
+  | "doctor_visit_prep"
+  | "health_summary";
 
 export interface AiUsageEvent {
   id: string;

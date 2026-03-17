@@ -10,7 +10,27 @@ interface Message {
   created_at: string;
 }
 
-export function ChatUI({ initialMessages }: { initialMessages: Message[] }) {
+interface LayerInfo {
+  label: string;
+  available: boolean;
+}
+
+const EVIDENCE_HINTS: { key: string; hint: string }[] = [
+  { key: "Документы", hint: "Вопросы про анализы и заключения точнее с загруженными документами" },
+  { key: "Дневник", hint: "Вопросы про динамику состояния точнее с записями в дневнике" },
+  { key: "Показатели", hint: "Вопросы про давление, пульс, вес точнее с записанными показателями" },
+  { key: "Лекарства", hint: "Вопросы про препараты точнее с заполненным списком лекарств" },
+];
+
+function getEvidenceHint(layers: LayerInfo[]): string | null {
+  const missing = EVIDENCE_HINTS.filter(
+    (h) => !layers.find((l) => l.label === h.key)?.available
+  );
+  if (missing.length === 0 || missing.length === EVIDENCE_HINTS.length) return null;
+  return missing[0].hint;
+}
+
+export function ChatUI({ initialMessages, layers = [] }: { initialMessages: Message[]; layers?: LayerInfo[] }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -55,24 +75,35 @@ export function ChatUI({ initialMessages }: { initialMessages: Message[] }) {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 180px)", minHeight: "300px" }}>
+    <div className="flex flex-col" style={{ height: "calc(100dvh - 180px)", minHeight: "300px" }}>
       <div className="flex-1 overflow-y-auto rounded-xl card p-4">
         {messages.length === 0 && (
-          <div className="py-8 text-center">
-            <p className="text-sm text-gray-400">
-              Начните диалог — задайте вопрос о вашем здоровье
+          <div className="flex flex-col items-center justify-center py-10 px-4">
+            <p className="text-[15px] font-semibold" style={{ color: "#1A2F2B" }}>
+              Я уже вижу ваши данные и готов разбираться
             </p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <p className="mt-1.5 text-sm text-center max-w-sm" style={{ color: "#5A8F85" }}>
+              Спросите о состоянии, динамике, лекарствах — или выберите один из вопросов ниже
+            </p>
+            <div className="mt-5 flex flex-wrap justify-center gap-2 max-w-md">
               {[
-                "Как у меня с показателями?",
-                "Какие лекарства я сейчас принимаю?",
-                "Что мне стоит обсудить с врачом?",
-              ].map((q) => (
+                "Как меняется моё состояние за последние дни?",
+                "Есть ли тревожные сигналы в моих показателях?",
+                "Что стоит обсудить с врачом на приёме?",
+                "Подведи итог по моим документам",
+                "Какие лекарства я принимаю и зачем?",
+                "На что обратить внимание в ближайшее время?",
+              ].map((q, idx) => (
                 <button
                   key={q}
                   type="button"
                   onClick={() => { setInput(q); }}
-                  className="rounded-full border border-gray-200 px-3 py-1.5 text-xs text-gray-600 transition hover:border-brand-300 hover:text-brand-600"
+                  className={`rounded-full px-3.5 py-2 text-xs font-medium transition hover:shadow-sm${idx >= 4 ? " hidden sm:inline-flex" : ""}`}
+                  style={{
+                    backgroundColor: "rgba(45,110,106,0.06)",
+                    color: "#2D6E6A",
+                    border: "1px solid rgba(45,110,106,0.12)",
+                  }}
                 >
                   {q}
                 </button>
@@ -125,6 +156,13 @@ export function ChatUI({ initialMessages }: { initialMessages: Message[] }) {
         <p className="mt-2 text-sm text-red-600">{error}</p>
       )}
 
+      {(() => {
+        const hint = getEvidenceHint(layers);
+        return hint ? (
+          <p className="mt-2 text-[11px] px-1" style={{ color: "#8AA8A2" }}>{hint}</p>
+        ) : null;
+      })()}
+
       <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
         <input
           value={input}
@@ -136,9 +174,9 @@ export function ChatUI({ initialMessages }: { initialMessages: Message[] }) {
         <button
           type="submit"
           disabled={sending || !input.trim()}
-          className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className="shrink-0 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
         >
-          {sending ? "..." : "Отправить"}
+          {sending ? "..." : <><span className="hidden sm:inline">Отправить</span><span className="sm:hidden">&rarr;</span></>}
         </button>
       </form>
     </div>

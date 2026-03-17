@@ -1,40 +1,42 @@
 import Link from "next/link";
 
-const SECTIONS = [
+interface RecordItem {
+  href: string;
+  label: string;
+  desc: string;
+}
+
+interface RecordGroup {
+  title: string;
+  hint: string;
+  items: RecordItem[];
+}
+
+const GROUPS: RecordGroup[] = [
   {
-    href: "/diary",
-    label: "Дневник",
-    desc: "Самочувствие, симптомы, сон",
+    title: "Ежедневное наблюдение",
+    hint: "Основа для AI-анализа — чем регулярнее записи, тем точнее выводы",
+    items: [
+      { href: "/diary", label: "Дневник", desc: "Записать самочувствие, симптомы и сон" },
+      { href: "/vitals", label: "Показатели", desc: "Давление, пульс, температура и другие измерения" },
+      { href: "/emotions", label: "Эмоции", desc: "Отслеживать тревогу, усталость, спокойствие" },
+      { href: "/medications", label: "Лекарства", desc: "Препараты, дозировки и отметки о приёме" },
+    ],
   },
   {
-    href: "/vitals",
-    label: "Показатели",
-    desc: "Давление, пульс, температура",
+    title: "Картина изменений",
+    hint: "Помогает AI видеть паттерны и тренды за период",
+    items: [
+      { href: "/symptoms-map", label: "Карта симптомов", desc: "Частота и закономерности за 14–30 дней" },
+      { href: "/timeline", label: "Хронология", desc: "Визиты к врачу, анализы, процедуры" },
+    ],
   },
   {
-    href: "/medications",
-    label: "Лекарства",
-    desc: "Препараты и приёмы",
-  },
-  {
-    href: "/emotions",
-    label: "Эмоции",
-    desc: "Тревога, спокойствие, усталость",
-  },
-  {
-    href: "/symptoms-map",
-    label: "Карта симптомов",
-    desc: "Частота и паттерны за 14/30 дней",
-  },
-  {
-    href: "/timeline",
-    label: "Хронология",
-    desc: "Визиты, анализы, процедуры",
-  },
-  {
-    href: "/profile",
-    label: "Медицинская карточка",
-    desc: "Группа крови, аллергии, хронические заболевания",
+    title: "Базовый контекст",
+    hint: "Фундамент, на который AI опирается при каждом анализе",
+    items: [
+      { href: "/profile", label: "Медицинская карточка", desc: "Группа крови, аллергии, хронические заболевания" },
+    ],
   },
 ];
 
@@ -42,26 +44,40 @@ export default function RecordsPage() {
   return (
     <div>
       <h2 className="text-2xl font-bold" style={{ color: "#1A2F2B" }}>
-        Ваши записи
+        Записи
       </h2>
-      <p className="mt-1 text-sm" style={{ color: "#5A8F85" }}>
-        Данные, которые вы ведёте. Чем больше записей — тем точнее работает AI-помощник.
+      <p className="mt-1 text-sm leading-snug" style={{ color: "#5A8F85" }}>
+        Всё, что вы фиксируете, становится контекстом для AI-помощника
       </p>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {SECTIONS.map((s) => (
-          <Link
-            key={s.href}
-            href={s.href}
-            className="rounded-xl card p-5 transition hover:shadow-md"
-          >
-            <p className="text-[15px] font-semibold" style={{ color: "#1A2F2B" }}>
-              {s.label}
-            </p>
-            <p className="mt-1 text-sm" style={{ color: "#5A8F85" }}>
-              {s.desc}
-            </p>
-          </Link>
+      <div className="mt-6 space-y-6">
+        {GROUPS.map((group) => (
+          <div key={group.title}>
+            <div className="mb-2">
+              <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>
+                {group.title}
+              </h3>
+              <p className="mt-0.5 text-xs" style={{ color: "#8AA8A2" }}>
+                {group.hint}
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {group.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-xl card px-4 py-3 transition hover:shadow-md active:scale-[0.98]"
+                >
+                  <p className="text-[15px] font-semibold" style={{ color: "#1A2F2B" }}>
+                    {item.label}
+                  </p>
+                  <p className="mt-0.5 text-sm leading-snug" style={{ color: "#5A8F85" }}>
+                    {item.desc}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>

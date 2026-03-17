@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { getSessionPatient } from "@/lib/get-patient-id";
 import { getAiUsageCount } from "@/lib/check-ai-quota";
+import { getLocalDayStart } from "@/lib/local-day";
 import { AiUsageStatus } from "@/components/ai-usage-status";
 import { OnboardingModal } from "./onboarding-modal";
+import { InlineAi } from "./inline-ai";
+import { AiSummary } from "./ai-summary";
+import { DataFreshness } from "./data-freshness";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const QUICK_ACTIONS = [
@@ -74,6 +78,122 @@ export default async function DashboardPage() {
 
   const hasData = feed.length > 0 || activeMeds.length > 0;
 
+  // --- Smart next step ---
+  const hasDocs = (docs ?? []).length > 0;
+  const hasDiary = (diary ?? []).length > 0;
+  const hasVitals = (vitals ?? []).length > 0;
+  const hasPrep = !!lastPrep;
+
+  let nextStep: { text: string; sub: string; href: string } | null = null;
+
+  if (!hasDocs) {
+    nextStep = {
+      text: "Загрузите первый документ",
+      sub: "Любой анализ или выписка — и система начнёт собирать вашу картину",
+      href: "/documents",
+    };
+  } else if (!hasDiary) {
+    nextStep = {
+      text: "Запишите самочувствие",
+      sub: "Одна запись в дневнике — и агент сможет отслеживать динамику",
+      href: "/diary",
+    };
+  } else if (!hasVitals) {
+    nextStep = {
+      text: "Добавьте первый показатель",
+      sub: "Давление, пульс или вес — это усилит аналитику",
+      href: "/vitals",
+    };
+  } else if (!hasPrep) {
+    nextStep = {
+      text: "Подготовьте сводку для врача",
+      sub: "Данных уже достаточно — AI соберёт структурированный отчёт",
+      href: "/doctor-visit",
+    };
+  }
+
+  // --- "Что важно сегодня" signals ---
+  interface TodaySignal {
+    text: string;
+    sub?: string;
+    href: string;
+    tone: "action" | "ok" | "hint";
+  }
+  const signals: TodaySignal[] = [];
+  const todayStart = getLocalDayStart();
+
+  // 1. Medications: intake status
+  if (activeMeds.length > 0) {
+    const intakeToday = lastIntake && new Date(lastIntake) >= todayStart;
+    if (intakeToday) {
+      signals.push({
+        text: "Приём лекарств зафиксирован",
+        href: "/medications",
+        tone: "ok",
+      });
+    } else {
+      signals.push({
+        text: "Отметить приём лекарств",
+        sub: `${activeMeds.length} активных препаратов`,
+        href: "/medications",
+        tone: "action",
+      });
+    }
+  }
+
+  // 2. Diary: today entry?
+  const diaryToday = diary?.[0] && new Date(diary[0].created_at) >= todayStart;
+  if (!diaryToday) {
+    signals.push({
+      text: "Записать самочувствие",
+      sub: diary?.[0]
+        ? `Последняя запись: ${new Date(diary[0].created_at).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}`
+        : undefined,
+      href: "/diary",
+      tone: "action",
+    });
+  }
+
+  // 3. Vitals: stale check (>3 days)
+  const lastVitalDate = vitals?.[0]?.measured_at ? new Date(vitals[0].measured_at) : null;
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+  if (!lastVitalDate || lastVitalDate < threeDaysAgo) {
+    signals.push({
+      text: "Добавить показатель",
+      sub: lastVitalDate
+        ? `Последний: ${lastVitalDate.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}`
+        : "Ещё нет измерений",
+      href: "/vitals",
+      tone: "hint",
+    });
+  }
+
+  // 4. Fresh visit prep
+  if (lastPrep) {
+    const prepAge = Date.now() - new Date(lastPrep.created_at).getTime();
+    if (prepAge < 7 * 24 * 60 * 60 * 1000) {
+      signals.push({
+        text: "Сводка для врача готова",
+        sub: "Можно открыть или поделиться",
+        href: "/doctor-visit",
+        tone: "ok",
+      });
+    }
+  }
+
+  // 5. Low-data fallback: suggest document upload if nothing else
+  if (signals.length === 0) {
+    signals.push({
+      text: "Загрузите первый документ",
+      sub: "Старый анализ или выписка — и я начну работать",
+      href: "/documents",
+      tone: "action",
+    });
+  }
+
+  // Cap at 4 signals
+  const todaySignals = signals.slice(0, 4);
+
   return (
     <div>
       <OnboardingModal />
@@ -86,20 +206,26 @@ export default async function DashboardPage() {
         <p className="mt-1 text-sm" style={{ color: "#5A8F85" }}>
           {hasData
             ? "На основе ваших данных — состояние, лекарства, последние записи"
-            : "Я буду анализировать ваши данные и помогать разбираться в здоровье"}
+            : "Загрузите один документ — и я начну разбираться в вашей ситуации"}
         </p>
 
-        {/* AI status summary - brief snapshot */}
+        {/* AI status summary - brief snapshot with source links */}
         {hasData && (
-          <div className="mt-4 flex flex-wrap gap-4 text-sm" style={{ color: "#3D6B62" }}>
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-sm" style={{ color: "#3D6B62" }}>
             {diary?.[0] && (
-              <span>Самочувствие: <strong>{diary[0].wellbeing_score}/10</strong></span>
+              <Link href="/diary" className="transition hover:underline">
+                Самочувствие: <strong>{diary[0].wellbeing_score}/10</strong>
+              </Link>
             )}
             {activeMeds.length > 0 && (
-              <span>Препаратов: <strong>{activeMeds.length}</strong></span>
+              <Link href="/medications" className="transition hover:underline">
+                Препаратов: <strong>{activeMeds.length}</strong>
+              </Link>
             )}
             {vitals?.[0] && (
-              <span>{vitalLabels[vitals[0].vital_type]}: <strong>{vitals[0].value} {vitals[0].unit}</strong></span>
+              <Link href="/vitals" className="transition hover:underline">
+                {vitalLabels[vitals[0].vital_type]}: <strong>{vitals[0].value} {vitals[0].unit}</strong>
+              </Link>
             )}
           </div>
         )}
@@ -107,21 +233,111 @@ export default async function DashboardPage() {
         {!hasData && (
           <div className="mt-5 rounded-xl p-5" style={{ backgroundColor: "rgba(45,110,106,0.05)" }}>
             <p className="text-[15px] leading-relaxed" style={{ color: "#2D5A54" }}>
-              Пока данных мало, но я уже готов помогать. Добавьте первые сведения о себе — и я соберу для вас общую картину.
+              Дайте мне один документ — старый анализ, выписку или заключение — и я уже смогу начать работать. Не нужно заполнять всё сразу.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/profile" className="rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:shadow-md" style={{ backgroundColor: "#2D6E6A" }}>
-                Заполнить карточку
+            <div className="mt-3 text-sm" style={{ color: "#5A8F85" }}>
+              <p>После загрузки вы получите:</p>
+              <ul className="mt-1.5 space-y-1 pl-4" style={{ listStyleType: "disc" }}>
+                <li>AI-разбор документа простым языком</li>
+                <li>Второе мнение — на что обратить внимание</li>
+                <li>Первую опору для дальнейшего анализа здоровья</li>
+              </ul>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <Link href="/documents" className="rounded-full px-5 py-2.5 text-sm font-semibold text-white text-center transition hover:shadow-md" style={{ backgroundColor: "#2D6E6A" }}>
+                Загрузить документ
               </Link>
-              <Link href="/medications" className="rounded-full px-4 py-2 text-sm font-semibold transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
-                Добавить лекарства
-              </Link>
-              <Link href="/diary" className="rounded-full px-4 py-2 text-sm font-semibold transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
-                Записать самочувствие
+              <Link href="/diary" className="rounded-full px-4 py-2.5 text-sm font-semibold text-center transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
+                Или записать самочувствие
               </Link>
             </div>
           </div>
         )}
+      </div>
+
+      {/* AI-generated health summary */}
+      {hasData && (
+        <div className="mt-4">
+          <AiSummary patientId={patientId} />
+        </div>
+      )}
+
+      {/* Data freshness / coverage */}
+      <div className="mt-4">
+        <DataFreshness
+          layers={[
+            { label: "Дневник", href: "/diary", lastDate: diary?.[0]?.created_at ?? null },
+            { label: "Показатели", href: "/vitals", lastDate: vitals?.[0]?.measured_at ?? null },
+            { label: "Лекарства", href: "/medications", lastDate: lastIntake ?? null },
+            { label: "Документы", href: "/documents", lastDate: docs?.[0]?.created_at ?? null },
+          ]}
+        />
+      </div>
+
+      {/* Smart next step */}
+      {nextStep && (
+        <Link
+          href={nextStep.href}
+          className="mt-4 flex items-center gap-4 rounded-2xl card p-5 transition hover:shadow-md active:scale-[0.99]"
+        >
+          <span
+            className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full text-white text-sm font-bold"
+            style={{ backgroundColor: "#2D6E6A" }}
+          >
+            →
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold" style={{ color: "#1A2F2B" }}>
+              {nextStep.text}
+            </p>
+            <p className="mt-0.5 text-xs" style={{ color: "#5A8F85" }}>
+              {nextStep.sub}
+            </p>
+          </div>
+        </Link>
+      )}
+
+      {/* Что важно сегодня */}
+      <div className="mt-4 rounded-2xl card p-5">
+        <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>Что важно сегодня</h3>
+        <div className="mt-3 space-y-2">
+          {todaySignals.map((s, i) => (
+            <Link
+              key={i}
+              href={s.href}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-white/50"
+              style={{ backgroundColor: s.tone === "action" ? "rgba(45,110,106,0.05)" : "transparent" }}
+            >
+              <span
+                className="shrink-0 h-2 w-2 rounded-full"
+                style={{
+                  backgroundColor:
+                    s.tone === "action" ? "#2D6E6A"
+                    : s.tone === "ok" ? "#8AA8A2"
+                    : "#BFC8C5",
+                }}
+              />
+              <div className="min-w-0 flex-1">
+                <p
+                  className="text-sm"
+                  style={{
+                    color: s.tone === "action" ? "#1A2F2B" : "#5A8F85",
+                    fontWeight: s.tone === "action" ? 600 : 400,
+                  }}
+                >
+                  {s.text}
+                </p>
+                {s.sub && (
+                  <p className="mt-0.5 text-xs" style={{ color: "#8AA8A2" }}>{s.sub}</p>
+                )}
+              </div>
+              <span
+                className="shrink-0 text-xs font-medium"
+                style={{ color: s.tone === "action" ? "#2D6E6A" : "#BFC8C5" }}
+              >→</span>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Quick actions */}
@@ -130,12 +346,17 @@ export default async function DashboardPage() {
           <Link
             key={a.href}
             href={a.href}
-            className="rounded-xl card p-3 text-center text-[13px] font-semibold transition hover:shadow-md"
+            className="rounded-xl card px-2 py-3 text-center text-[13px] leading-snug font-semibold transition hover:shadow-md"
             style={{ color: "#2D6E6A" }}
           >
             {a.label}
           </Link>
         ))}
+      </div>
+
+      {/* Inline AI */}
+      <div className="mt-4">
+        <InlineAi />
       </div>
 
       {/* Active medications with intake action */}
@@ -166,17 +387,22 @@ export default async function DashboardPage() {
       {lastPrep && (
         <div className="mt-4 rounded-2xl card p-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>Последняя сводка для врача</h3>
-            <Link href="/doctor-visit" className="text-xs font-medium" style={{ color: "#2D6E6A" }}>
-              Подробнее →
-            </Link>
+            <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>Сводка для врача</h3>
+            <span className="text-xs" style={{ color: "#8AA8A2" }}>
+              {new Date(lastPrep.created_at).toLocaleDateString("ru-RU")}
+            </span>
           </div>
           <p className="mt-2 text-sm line-clamp-3" style={{ color: "#3D6B62" }}>
             {lastPrep.summary.slice(0, 200)}...
           </p>
-          <p className="mt-1 text-xs" style={{ color: "#8AA8A2" }}>
-            {new Date(lastPrep.created_at).toLocaleDateString("ru-RU")}
-          </p>
+          <div className="mt-3 flex flex-wrap gap-3 pt-2 border-t" style={{ borderColor: "rgba(45,110,106,0.1)" }}>
+            <Link href="/doctor-visit" className="text-xs font-medium" style={{ color: "#2D6E6A" }}>
+              Открыть полностью →
+            </Link>
+            <Link href="/doctor-visit" className="text-xs font-medium" style={{ color: "#5A8F85" }}>
+              Передать врачу →
+            </Link>
+          </div>
         </div>
       )}
 
@@ -189,9 +415,9 @@ export default async function DashboardPage() {
               <Link
                 key={i}
                 href={item.href}
-                className="flex items-center justify-between rounded-lg px-2 py-1.5 transition hover:bg-white/50"
+                className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition hover:bg-white/50"
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
                   <span
                     className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
                     style={{ backgroundColor: "rgba(45,110,106,0.08)", color: "#2D6E6A" }}
@@ -200,7 +426,7 @@ export default async function DashboardPage() {
                   </span>
                   <span className="truncate text-sm" style={{ color: "#1A2F2B" }}>{item.label}</span>
                 </div>
-                <span className="shrink-0 text-xs" style={{ color: "#8AA8A2" }}>
+                <span className="shrink-0 ml-1 text-xs" style={{ color: "#8AA8A2" }}>
                   {new Date(item.date).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}
                 </span>
               </Link>

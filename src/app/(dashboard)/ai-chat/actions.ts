@@ -8,10 +8,10 @@ import { checkAiQuota } from "@/lib/check-ai-quota";
 import { revalidatePath } from "next/cache";
 
 async function buildContextSnapshot(
-  supabase: ReturnType<typeof Object>,
+  supabase: SupabaseClient,
   patientId: string
 ): Promise<string> {
-  const sb = supabase as import("@supabase/supabase-js").SupabaseClient;
+  const sb = supabase;
 
   const [
     { data: profile },
@@ -117,7 +117,7 @@ export async function sendMessage(message: string) {
   }));
 
   // Build context snapshot
-  const context = await buildContextSnapshot(supabase, patientId);
+  const context = await buildContextSnapshot(supabase as unknown as SupabaseClient, patientId);
 
   const systemPrompt = `Ты — медицинский ассистент в приложении MedHUB. Отвечай на русском языке.
 Ты помогаешь пациенту разобраться в его медицинских данных, напоминаешь о лекарствах и отвечаешь на вопросы о здоровье.
@@ -158,5 +158,6 @@ ${context}`;
   if (saveAssistantErr) throw new Error(saveAssistantErr.message);
 
   revalidatePath("/ai-chat");
+  revalidatePath("/dashboard");
   return assistantContent;
 }
