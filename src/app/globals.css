@@ -2,26 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Dashboard card surface */
+.card {
+  background-color: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s, background-color 0.2s;
+}
+.card:hover {
+  background-color: rgba(255, 255, 255, 0.80);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Login page input focus */
+.login-input:focus {
+  border-color: #2D6E6A;
+  box-shadow: 0 0 0 3px rgba(45, 110, 106, 0.10);
+  background-color: #FFFFFF;
 }
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+.login-input::placeholder {
+  color: #A8B8B4;
 }

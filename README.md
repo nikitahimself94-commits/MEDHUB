@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MedHub
 
-## Getting Started
+Персональная медицинская карточка с AI-агентом.
 
-First, run the development server:
+## Стек
+
+- Next.js 14 (App Router)
+- TypeScript
+- Tailwind CSS
+- Supabase (PostgreSQL + Auth + Storage)
+- Claude API (Phase 3)
+
+## Запуск
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Переменные окружения
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Скопируйте `.env.example` → `.env.local` и заполните значения из Supabase Dashboard.
 
-## Learn More
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Модель доступа
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Все авторизованные пользователи имеют одинаковый доступ ко всем разделам и данным.
+Роль (`patient` / `guardian`) хранится в `profiles.role` как атрибут профиля и не влияет на permissions.
+Подробнее: [docs/ACCESS_MODEL.md](docs/ACCESS_MODEL.md).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Структура проекта
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/
+│   ├── (auth)/login/       — авторизация
+│   ├── (dashboard)/        — защищённые разделы
+│   │   ├── profile/        — медицинская карточка
+│   │   ├── diary/          — дневник самочувствия
+│   │   ├── documents/      — хранилище документов
+│   │   └── medications/    — трекер лекарств
+│   └── auth/callback/      — OAuth callback
+├── components/ui/          — UI-компоненты
+├── lib/supabase/           — Supabase clients
+└── types/                  — TypeScript типы
+supabase/
+├── migrations/             — SQL миграции
+└── SEED_INSTRUCTIONS.md    — инструкция по созданию пользователей
+```
