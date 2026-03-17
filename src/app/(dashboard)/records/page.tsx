@@ -7,14 +7,14 @@ const SECTIONS = [
     desc: "Самочувствие, симптомы, сон",
   },
   {
-    href: "/medications",
-    label: "Лекарства",
-    desc: "Препараты и приёмы",
-  },
-  {
     href: "/vitals",
     label: "Показатели",
     desc: "Давление, пульс, температура",
+  },
+  {
+    href: "/medications",
+    label: "Лекарства",
+    desc: "Препараты и приёмы",
   },
   {
     href: "/emotions",
@@ -36,26 +36,16 @@ const SECTIONS = [
     label: "Медицинская карточка",
     desc: "Группа крови, аллергии, хронические заболевания",
   },
-  {
-    href: "/ai-chat",
-    label: "AI-помощник",
-    desc: "Задать вопрос о здоровье",
-  },
-  {
-    href: "/ai-plan",
-    label: "AI-лимиты",
-    desc: "Использование и доступные запросы",
-  },
 ];
 
 export default function RecordsPage() {
   return (
     <div>
       <h2 className="text-2xl font-bold" style={{ color: "#1A2F2B" }}>
-        Ваши данные
+        Ваши записи
       </h2>
       <p className="mt-1 text-sm" style={{ color: "#5A8F85" }}>
-        Всё, что вы записываете и храните в MedHUB. AI использует эти данные для анализа и рекомендаций.
+        Данные, которые вы ведёте. Чем больше записей — тем точнее работает AI-помощник.
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

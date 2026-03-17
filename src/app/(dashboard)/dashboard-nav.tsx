@@ -15,7 +15,11 @@ export function DashboardNav() {
 
   // Match sub-routes to parent nav items
   function isActive(href: string) {
-    if (href === "/dashboard") return pathname === "/dashboard";
+    if (href === "/dashboard") {
+      return pathname === "/dashboard" ||
+        pathname === "/ai-chat" ||
+        pathname === "/ai-plan";
+    }
     if (href === "/records") {
       return pathname === "/records" ||
         pathname === "/diary" ||
@@ -24,12 +28,13 @@ export function DashboardNav() {
         pathname === "/emotions" ||
         pathname === "/symptoms-map" ||
         pathname === "/timeline" ||
-        pathname === "/profile" ||
-        pathname === "/ai-chat" ||
-        pathname === "/ai-plan";
+        pathname === "/profile";
     }
     if (href === "/documents") return pathname === "/documents";
-    if (href === "/doctor-visit") return pathname === "/doctor-visit";
+    if (href === "/doctor-visit") {
+      return pathname === "/doctor-visit" ||
+        pathname.startsWith("/share");
+    }
     return pathname === href;
   }
 
