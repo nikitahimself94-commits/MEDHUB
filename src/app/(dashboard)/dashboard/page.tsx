@@ -316,41 +316,49 @@ export default async function DashboardPage() {
       <OnboardingModal />
 
       {/* ===== PROACTIVE AGENT HERO ===== */}
-      <div className="rounded-2xl p-6" style={{ backgroundColor: "#F4F8F7", border: "1px solid rgba(45,110,106,0.1)" }}>
-        {/* A. Agent opening */}
-        <p className="text-[17px] font-bold leading-snug" style={{ color: "#1A2F2B" }}>
-          {agentOpening}
-        </p>
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{ backgroundColor: "#1A2F2B" }}
+      >
+        {/* Opening + Observation — dark ground, text pops */}
+        <div className="px-6 pt-6 pb-5">
+          <p className="text-[13px] font-semibold uppercase tracking-wide" style={{ color: "#5A8F85" }}>
+            Ваш помощник
+          </p>
+          <p className="mt-2 text-[19px] font-bold leading-snug text-white">
+            {agentOpening}
+          </p>
+          <p className="mt-2.5 text-[15px] leading-relaxed" style={{ color: "#B0CDC8" }}>
+            {agentObservation}
+          </p>
+        </div>
 
-        {/* B. Main observation */}
-        <p className="mt-3 text-sm leading-relaxed" style={{ color: "#2D5A54" }}>
-          {agentObservation}
-        </p>
-
-        {/* C. One next step — action + reason */}
+        {/* Next step — accent strip */}
         <Link
           href={agentNextStep.href}
-          className="mt-5 flex items-center gap-3 rounded-xl px-4 py-3 transition hover:shadow-md active:scale-[0.99]"
+          className="flex items-center gap-3 px-6 py-4 transition hover:brightness-110 active:scale-[0.995]"
           style={{ backgroundColor: "#2D6E6A" }}
         >
-          <span className="shrink-0 text-white/60 text-sm font-bold">→</span>
+          <span className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold" style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fff" }}>
+            →
+          </span>
           <div className="min-w-0">
-            <span className="text-sm font-semibold text-white">{agentNextStep.text}</span>
+            <span className="text-[15px] font-semibold text-white">{agentNextStep.text}</span>
             {agentNextStep.sub && (
-              <span className="block text-xs text-white/70 mt-0.5">{agentNextStep.sub}</span>
+              <span className="block text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.65)" }}>{agentNextStep.sub}</span>
             )}
           </div>
         </Link>
 
-        {/* D. Evidence — light, tertiary */}
+        {/* Evidence — inline footer */}
         {evidence.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1">
+          <div className="px-6 py-2.5 flex flex-wrap gap-x-3 gap-y-0.5" style={{ backgroundColor: "#162623" }}>
             {evidence.map((e) => (
               <Link
                 key={e.label}
                 href={e.href}
                 className="text-[11px] transition hover:underline"
-                style={{ color: "#8AA8A2" }}
+                style={{ color: "#5A8F85" }}
               >
                 {e.label} · {e.detail}
               </Link>
@@ -366,9 +374,9 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Что важно сегодня */}
+      {/* Что важно сегодня — lighter to not compete */}
       <div className="mt-4 rounded-2xl card p-5">
-        <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>Что важно сегодня</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8AA8A2" }}>Что важно сегодня</h3>
         <div className="mt-3 space-y-2">
           {todaySignals.map((s, i) => (
             <Link
