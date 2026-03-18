@@ -11,7 +11,7 @@ import { completeOnboarding } from "./onboarding-actions";
 
 // ─── TYPING ANIMATION HOOK ───
 
-function useTypingLines(lines: string[], speed = 35) {
+function useTypingLines(lines: string[]) {
   const [visibleLines, setVisibleLines] = useState<string[]>([]);
   const [done, setDone] = useState(false);
   const rafRef = useRef<number>(0);
@@ -23,10 +23,27 @@ function useTypingLines(lines: string[], speed = 35) {
     let charIdx = 0;
     let current: string[] = [];
     let lastTime = 0;
+    const INITIAL_DELAY = 400; // pause before first character
+    let started = false;
 
     function tick(time: number) {
       if (!lastTime) lastTime = time;
-      if (time - lastTime >= speed) {
+
+      // Initial delay — creates "gathering thoughts" feel
+      if (!started) {
+        if (time - lastTime < INITIAL_DELAY) {
+          rafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+        started = true;
+        lastTime = time;
+      }
+
+      // Adaptive speed: short lines 30ms, long lines 18ms (cap ~2.5s per line)
+      const currentLine = lines[lineIdx] || "";
+      const charSpeed = currentLine.length > 80 ? 18 : currentLine.length > 50 ? 24 : 30;
+
+      if (time - lastTime >= charSpeed) {
         lastTime = time;
         if (lineIdx < lines.length) {
           const line = lines[lineIdx];
@@ -35,10 +52,9 @@ function useTypingLines(lines: string[], speed = 35) {
             current = [...current.slice(0, lineIdx), line.slice(0, charIdx)];
             setVisibleLines([...current]);
           } else {
-            // Line done — pause before next line
             lineIdx++;
             charIdx = 0;
-            lastTime = time + 200; // 200ms pause between lines
+            lastTime = time + 250; // pause between lines
           }
         } else {
           setDone(true);
@@ -50,7 +66,7 @@ function useTypingLines(lines: string[], speed = 35) {
 
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [lines, speed]);
+  }, [lines]);
 
   const skipToEnd = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
@@ -153,36 +169,44 @@ export function OnboardingGate() {
         }`}
       >
         <div className="w-full max-w-lg">
-          {/* Agent label */}
-          <p
-            className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-6"
-            style={{ color: "#4A8A82" }}
-          >
-            Ваш помощник
-          </p>
+          {/* Agent label — only on first step */}
+          {stepId === "intro" && (
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-6"
+              style={{ color: "#4A8A82" }}
+            >
+              Ваш помощник
+            </p>
+          )}
 
           {/* Typing lines */}
           <div className="min-h-[120px] space-y-3">
-            {visibleLines.map((line, i) => (
-              <p
-                key={`${stepId}-${i}`}
-                className={`leading-relaxed ${
-                  i === 0 && (step.type === "agent" || step.type === "agent_react" || step.type === "final")
-                    ? "text-[22px] sm:text-[26px] font-bold text-white"
-                    : "text-[16px] sm:text-[18px]"
-                }`}
-                style={
-                  i === 0 && (step.type === "agent" || step.type === "agent_react" || step.type === "final")
-                    ? undefined
-                    : { color: "#A0C4BE" }
-                }
-              >
-                {line}
-                {i === visibleLines.length - 1 && !typingDone && (
-                  <span className="inline-block w-0.5 h-5 ml-0.5 align-text-bottom animate-pulse" style={{ backgroundColor: "#2D6E6A" }} />
-                )}
-              </p>
-            ))}
+            {visibleLines.map((line, i) => {
+              // First line of agent/react/final = bold headline
+              // For choice/text steps = all lines are questions, white + prominent
+              const isHeadline = i === 0 && (step.type === "agent" || step.type === "agent_react" || step.type === "final");
+              const isQuestion = step.type === "choice" || step.type === "text";
+              return (
+                <p
+                  key={`${stepId}-${i}`}
+                  className={`leading-relaxed ${
+                    isHeadline
+                      ? "text-[22px] sm:text-[26px] font-bold text-white"
+                      : isQuestion
+                        ? "text-[18px] sm:text-[20px] font-semibold text-white"
+                        : "text-[16px] sm:text-[18px]"
+                  }`}
+                  style={
+                    isHeadline || isQuestion ? undefined : { color: "#A0C4BE" }
+                  }
+                >
+                  {line}
+                  {i === visibleLines.length - 1 && !typingDone && (
+                    <span className="inline-block w-0.5 h-5 ml-0.5 align-text-bottom animate-pulse" style={{ backgroundColor: "#2D6E6A" }} />
+                  )}
+                </p>
+              );
+            })}
           </div>
 
           {/* Interactive area — shows after typing completes */}
@@ -196,7 +220,7 @@ export function OnboardingGate() {
                   className="rounded-xl px-6 py-3.5 text-[15px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
                   style={{ backgroundColor: "#2D6E6A" }}
                 >
-                  {step.type === "agent" ? step.button : step.button}
+                  {step.button}
                 </button>
               )}
 
@@ -294,43 +318,59 @@ export function OnboardingGate() {
             </div>
           )}
 
-          {/* Tap to skip typing (mobile friendly) */}
-          {!typingDone && (step.type === "agent" || step.type === "agent_react" || step.type === "final") && (
+          {/* Tap anywhere on text to skip typing */}
+          {!typingDone && (
             <button
               type="button"
               onClick={skipToEnd}
-              className="mt-6 text-[12px] transition"
-              style={{ color: "#3A6B64" }}
+              className="mt-8 text-[11px] transition opacity-0 animate-fadeInSlow"
+              style={{ color: "#2A5B55" }}
             >
-              Показать всё
+              нажмите, чтобы продолжить
             </button>
           )}
         </div>
       </div>
 
-      {/* Progress bar — very subtle at bottom */}
+      {/* Progress bar — very subtle at bottom, based on actual path */}
       <div className="relative z-10 px-6 pb-6">
-        <div className="flex gap-1">
-          {["intro", "reassure", "entry_mode", "mirror", "chronic", "has_documents", "goal", "role_explain", "first_action"].map((id, i, arr) => (
-            <div
-              key={id}
-              className="h-0.5 flex-1 rounded-full transition-all duration-500"
-              style={{
-                backgroundColor: arr.indexOf(stepId) >= i ? "#2D6E6A" : "rgba(45,110,106,0.15)",
-              }}
-            />
-          ))}
-        </div>
+        {(() => {
+          // Build actual step sequence based on answers (excludes skipped steps)
+          const base = ["intro", "reassure", "entry_mode", "mirror", "chronic"];
+          if (answers.has_chronic === "yes") base.push("chronic_detail");
+          base.push("has_documents", "goal", "role_explain", "first_action");
+          const idx = base.indexOf(stepId);
+          return (
+            <div className="flex gap-1">
+              {base.map((_, i) => (
+                <div
+                  key={i}
+                  className="h-0.5 flex-1 rounded-full transition-all duration-500"
+                  style={{
+                    backgroundColor: idx >= i ? "#2D6E6A" : "rgba(45,110,106,0.15)",
+                  }}
+                />
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
-      {/* Fade-in animation keyframes */}
+      {/* Animation keyframes */}
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
         }
         .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out;
+          animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeInSlow {
+          from { opacity: 0; }
+          to { opacity: 0.5; }
+        }
+        .animate-fadeInSlow {
+          animation: fadeInSlow 1s ease-out 2s forwards;
         }
       `}</style>
     </div>
