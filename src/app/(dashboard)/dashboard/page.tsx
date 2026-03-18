@@ -3,7 +3,7 @@ import { getSessionPatient } from "@/lib/get-patient-id";
 import { getAiUsageCount } from "@/lib/check-ai-quota";
 import { getLocalDayStart } from "@/lib/local-day";
 import { AiUsageStatus } from "@/components/ai-usage-status";
-import { OnboardingModal } from "./onboarding-modal";
+import { OnboardingGate } from "./onboarding-gate";
 import { InlineAi } from "./inline-ai";
 import { AiSummary } from "./ai-summary";
 
@@ -50,18 +50,38 @@ export default async function DashboardPage() {
 
   const displayName = profile?.display_name?.trim() || "";
 
-  // Fetch onboarding context separately — column may not exist yet (migration pending)
+  // Fetch onboarding context + completion status (columns may not exist yet)
   let onboardingCtx: Record<string, string> | null = null;
+  let onboardingCompleted = false;
   {
     const { data: obProfile, error: obErr } = await supabase
       .from("profiles")
-      .select("onboarding_context")
+      .select("onboarding_context, onboarding_completed_at")
       .eq("patient_id", patientId)
       .limit(1)
       .maybeSingle();
-    if (!obErr) {
-      onboardingCtx = (obProfile?.onboarding_context as Record<string, string>) ?? null;
+    if (!obErr && obProfile) {
+      onboardingCtx = (obProfile.onboarding_context as Record<string, string>) ?? null;
+      onboardingCompleted = !!obProfile.onboarding_completed_at;
+    } else {
+      // Fallback: try without onboarding_completed_at (column may not exist)
+      const { data: obFallback, error: obErr2 } = await supabase
+        .from("profiles")
+        .select("onboarding_context")
+        .eq("patient_id", patientId)
+        .limit(1)
+        .maybeSingle();
+      if (!obErr2 && obFallback) {
+        onboardingCtx = (obFallback.onboarding_context as Record<string, string>) ?? null;
+        // If context exists, consider onboarding done (legacy users)
+        onboardingCompleted = !!onboardingCtx && Object.keys(onboardingCtx).length > 0;
+      }
     }
+  }
+
+  // Show fullscreen gate for users who haven't completed onboarding
+  if (!onboardingCompleted) {
+    return <OnboardingGate />;
   }
   const activeMeds = meds ?? [];
   const lastIntake = intakes?.[0]?.taken_at;
@@ -108,20 +128,34 @@ export default async function DashboardPage() {
 
   if (dataState === "empty") {
     agentOpening = onboardingCtx
-      ? agentLine("я помню наш разговор.")
+      ? agentLine("мы уже познакомились — теперь нужна первая точка данных.")
       : agentLine("давайте начнём.");
-    if (onboardingCtx?.reason) {
-      agentObservation = `Вы сказали: «${onboardingCtx.reason}». Чтобы я мог работать с этим предметно, мне нужна хотя бы одна точка — запись самочувствия, показатель или документ.`;
-    } else if (onboardingCtx?.current_concern) {
-      agentObservation = `Вы упомянули: «${onboardingCtx.current_concern}». Одна запись — и я смогу начать отслеживать.`;
+    // Use new onboarding fields (entry_mode, chronic_detail) or legacy (reason, current_concern)
+    if (onboardingCtx?.chronic_detail) {
+      agentObservation = `Вы упомянули ${onboardingCtx.chronic_detail}. Чтобы я мог работать с этим предметно, мне нужна хотя бы одна запись.`;
+    } else if (onboardingCtx?.primary_goal) {
+      agentObservation = `Ваша цель — ${onboardingCtx.primary_goal}. Одна запись или документ — и я начну собирать картину.`;
+    } else if (onboardingCtx?.reason) {
+      agentObservation = `Вы сказали: «${onboardingCtx.reason}». Одна точка данных — и я начну работать.`;
+    } else if (onboardingCtx?.entry_mode) {
+      agentObservation = "Я помню, что вы рассказали при знакомстве. Теперь мне нужна первая опора — запись самочувствия, показатель или документ.";
     } else {
       agentObservation = "Пока я вас не вижу — нет ни одной записи. Одна точка данных, и я начну собирать картину.";
     }
-    agentNextStep = {
-      text: "Записать самочувствие",
-      sub: "Это самый быстрый способ дать мне первую опору",
-      href: "/diary",
-    };
+    // Pick first action based on onboarding answers
+    if (onboardingCtx?.has_documents === "yes") {
+      agentNextStep = {
+        text: "Загрузите первый документ",
+        sub: "Вы сказали, что документы есть — это лучший старт",
+        href: "/documents",
+      };
+    } else {
+      agentNextStep = {
+        text: "Записать самочувствие",
+        sub: "Это самый быстрый способ дать мне первую опору",
+        href: "/diary",
+      };
+    }
   } else if (dataState === "partial") {
     agentOpening = agentLine("пока картина такая.");
     // What we see — as a meaningful sentence, not a list
@@ -317,7 +351,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <OnboardingModal />
+      {/* Onboarding gate renders as fullscreen before this point — see early return above */}
 
       {/* ===== PROACTIVE AGENT HERO ===== */}
       <div
