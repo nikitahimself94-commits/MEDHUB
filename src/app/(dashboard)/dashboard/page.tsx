@@ -52,7 +52,7 @@ export default async function DashboardPage() {
 
   // Fetch onboarding context + completion status (columns may not exist yet)
   let onboardingCtx: Record<string, string> | null = null;
-  let onboardingCompleted = false;
+  let onboardingCompletedAt: string | null = null;
   {
     const { data: obProfile, error: obErr } = await supabase
       .from("profiles")
@@ -62,7 +62,7 @@ export default async function DashboardPage() {
       .maybeSingle();
     if (!obErr && obProfile) {
       onboardingCtx = (obProfile.onboarding_context as Record<string, string>) ?? null;
-      onboardingCompleted = !!obProfile.onboarding_completed_at;
+      onboardingCompletedAt = (obProfile.onboarding_completed_at as string) ?? null;
     } else {
       // Fallback: try without onboarding_completed_at (column may not exist)
       const { data: obFallback, error: obErr2 } = await supabase
@@ -73,14 +73,21 @@ export default async function DashboardPage() {
         .maybeSingle();
       if (!obErr2 && obFallback) {
         onboardingCtx = (obFallback.onboarding_context as Record<string, string>) ?? null;
-        // If context exists, consider onboarding done (legacy users)
-        onboardingCompleted = !!onboardingCtx && Object.keys(onboardingCtx).length > 0;
       }
     }
   }
 
-  // Show fullscreen gate for users who haven't completed onboarding
-  if (!onboardingCompleted) {
+  // Gate logic: show fullscreen welcome flow ONLY for truly new users
+  // Skip if: explicitly completed, OR has onboarding context, OR has any real product data
+  const hasProductData = (diary ?? []).length > 0
+    || (vitals ?? []).length > 0
+    || (docs ?? []).length > 0
+    || (meds ?? []).length > 0;
+  const onboardingDone = !!onboardingCompletedAt
+    || (!!onboardingCtx && Object.keys(onboardingCtx).length > 0)
+    || hasProductData;
+
+  if (!onboardingDone) {
     return <OnboardingGate />;
   }
   const activeMeds = meds ?? [];
@@ -127,32 +134,41 @@ export default async function DashboardPage() {
   }
 
   if (dataState === "empty") {
-    agentOpening = onboardingCtx
-      ? agentLine("мы уже познакомились — теперь нужна первая точка данных.")
-      : agentLine("давайте начнём.");
-    // Use new onboarding fields (entry_mode, chronic_detail) or legacy (reason, current_concern)
-    if (onboardingCtx?.chronic_detail) {
-      agentObservation = `Вы упомянули ${onboardingCtx.chronic_detail}. Чтобы я мог работать с этим предметно, мне нужна хотя бы одна запись.`;
-    } else if (onboardingCtx?.primary_goal) {
-      agentObservation = `Ваша цель — ${onboardingCtx.primary_goal}. Одна запись или документ — и я начну собирать картину.`;
+    // After onboarding gate: continue the conversation, not restart it
+    if (onboardingCtx?.entry_mode) {
+      // User just came from welcome flow — direct continuation
+      agentOpening = agentLine("я на месте.");
+      // Build observation that continues the onboarding thread
+      const mode = onboardingCtx.entry_mode;
+      if (onboardingCtx.chronic_detail) {
+        agentObservation = `Я учёл ${onboardingCtx.chronic_detail} — это уже часть вашего контекста. Теперь мне нужна первая запись, чтобы начать отслеживать.`;
+      } else if (mode === "concern") {
+        agentObservation = "Я готов разбираться. Первая запись самочувствия или документ — и у меня появится опора для наблюдения.";
+      } else if (mode === "caregiver") {
+        agentObservation = "Я буду держать картину. Добавьте первую запись — и мне будет от чего отталкиваться.";
+      } else {
+        agentObservation = "Хорошее начало. Первая точка данных — и я начну собирать вашу линию.";
+      }
     } else if (onboardingCtx?.reason) {
-      agentObservation = `Вы сказали: «${onboardingCtx.reason}». Одна точка данных — и я начну работать.`;
-    } else if (onboardingCtx?.entry_mode) {
-      agentObservation = "Я помню, что вы рассказали при знакомстве. Теперь мне нужна первая опора — запись самочувствия, показатель или документ.";
+      // Legacy onboarding format
+      agentOpening = agentLine("я на месте.");
+      agentObservation = `Вы сказали: «${onboardingCtx.reason}». Первая запись — и я начну работать.`;
     } else {
-      agentObservation = "Пока я вас не вижу — нет ни одной записи. Одна точка данных, и я начну собирать картину.";
+      // No onboarding at all (existing user without context)
+      agentOpening = agentLine("давайте начнём.");
+      agentObservation = "Мне нужна первая точка данных — запись самочувствия, показатель или документ.";
     }
     // Pick first action based on onboarding answers
     if (onboardingCtx?.has_documents === "yes") {
       agentNextStep = {
         text: "Загрузите первый документ",
-        sub: "Вы сказали, что документы есть — это лучший старт",
+        sub: "Вы говорили, что документы есть — это лучший старт",
         href: "/documents",
       };
     } else {
       agentNextStep = {
         text: "Записать самочувствие",
-        sub: "Это самый быстрый способ дать мне первую опору",
+        sub: "Самый быстрый способ дать мне первую опору",
         href: "/diary",
       };
     }
