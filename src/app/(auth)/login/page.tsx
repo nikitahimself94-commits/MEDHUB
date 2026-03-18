@@ -1,5 +1,6 @@
-import { login } from "./actions";
+import { login, signup } from "./actions";
 import { DM_Sans, Playfair_Display } from "next/font/google";
+import Link from "next/link";
 
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["700"] });
 
@@ -12,14 +13,16 @@ const playfair = Playfair_Display({
 export default function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: { error?: string; mode?: string };
 }) {
+  const isSignup = searchParams.mode === "signup";
+
   return (
     <main
       className="relative flex min-h-screen items-center justify-center px-4 overflow-hidden"
       style={{ background: "#2D6E6A" }}
     >
-      {/* Background pattern — subtle geometric grid */}
+      {/* Background pattern */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -35,7 +38,7 @@ export default function LoginPage({
         }}
       />
 
-      {/* Soft light overlay from top */}
+      {/* Soft light overlay */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -44,9 +47,8 @@ export default function LoginPage({
       />
 
       <div className="relative z-10 w-full max-w-[460px]">
-        {/* Brand block — large, dominant */}
+        {/* Brand block */}
         <div className="mb-12 text-center">
-          {/* Heart mark */}
           <div className="mb-6 inline-flex items-center justify-center">
             <svg width="40" height="37" viewBox="0 0 32 30" fill="none" aria-hidden="true">
               <path
@@ -74,7 +76,7 @@ export default function LoginPage({
           </p>
         </div>
 
-        {/* Login card */}
+        {/* Auth card */}
         <div
           className="rounded-3xl px-10 pb-10 pt-9"
           style={{
@@ -91,14 +93,38 @@ export default function LoginPage({
             </div>
           )}
 
-          <form action={login} className="space-y-6">
+          <form action={isSignup ? signup : login} className="space-y-5">
+            {isSignup && (
+              <div>
+                <label
+                  htmlFor="display_name"
+                  className="mb-2 block text-[14px] font-semibold"
+                  style={{ color: "#1E3330" }}
+                >
+                  Как к вам обращаться
+                </label>
+                <input
+                  id="display_name"
+                  name="display_name"
+                  type="text"
+                  placeholder="Ваше имя"
+                  className="login-input block w-full rounded-xl px-5 py-4 text-[15px] outline-none transition-all placeholder:font-normal"
+                  style={{
+                    backgroundColor: "#EDF1F0",
+                    border: "1.5px solid #C8D5D2",
+                    color: "#1A2F2B",
+                  }}
+                />
+              </div>
+            )}
+
             <div>
               <label
                 htmlFor="email"
                 className="mb-2 block text-[14px] font-semibold"
                 style={{ color: "#1E3330" }}
               >
-                Логин
+                Email
               </label>
               <input
                 id="email"
@@ -128,7 +154,8 @@ export default function LoginPage({
                 name="password"
                 type="password"
                 required
-                placeholder="Введите пароль"
+                minLength={6}
+                placeholder={isSignup ? "Минимум 6 символов" : "Введите пароль"}
                 className="login-input block w-full rounded-xl px-5 py-4 text-[15px] outline-none transition-all placeholder:font-normal"
                 style={{
                   backgroundColor: "#EDF1F0",
@@ -147,10 +174,29 @@ export default function LoginPage({
                   boxShadow: "0 4px 16px rgba(45,110,106,0.3)",
                 }}
               >
-                Войти
+                {isSignup ? "Создать аккаунт" : "Войти"}
               </button>
             </div>
           </form>
+
+          {/* Toggle login/signup */}
+          <p className="mt-5 text-center text-[13px]" style={{ color: "#5A8F85" }}>
+            {isSignup ? (
+              <>
+                Уже есть аккаунт?{" "}
+                <Link href="/login" className="font-semibold underline" style={{ color: "#2D6E6A" }}>
+                  Войти
+                </Link>
+              </>
+            ) : (
+              <>
+                Нет аккаунта?{" "}
+                <Link href="/login?mode=signup" className="font-semibold underline" style={{ color: "#2D6E6A" }}>
+                  Зарегистрироваться
+                </Link>
+              </>
+            )}
+          </p>
         </div>
 
         {/* Footer */}

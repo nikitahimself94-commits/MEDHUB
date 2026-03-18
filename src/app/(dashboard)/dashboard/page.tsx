@@ -48,7 +48,7 @@ export default async function DashboardPage() {
 
   const usageCount = await getAiUsageCount(supabase as unknown as SupabaseClient, patientId);
 
-  const displayName = profile?.display_name || "Пользователь";
+  const displayName = profile?.display_name?.trim() || "";
 
   // Fetch onboarding context separately — column may not exist yet (migration pending)
   let onboardingCtx: Record<string, string> | null = null;
@@ -102,10 +102,14 @@ export default async function DashboardPage() {
   let agentObservation = "";
   let agentNextStep: { text: string; sub: string; href: string } = { text: "", sub: "", href: "" };
 
+  function agentLine(phrase: string): string {
+    return displayName ? `${displayName}, ${phrase}` : phrase.charAt(0).toUpperCase() + phrase.slice(1);
+  }
+
   if (dataState === "empty") {
     agentOpening = onboardingCtx
-      ? `${displayName}, я помню наш разговор.`
-      : `${displayName}, давайте начнём.`;
+      ? agentLine("я помню наш разговор.")
+      : agentLine("давайте начнём.");
     if (onboardingCtx?.reason) {
       agentObservation = `Вы сказали: «${onboardingCtx.reason}». Чтобы я мог работать с этим предметно, мне нужна хотя бы одна точка — запись самочувствия, показатель или документ.`;
     } else if (onboardingCtx?.current_concern) {
@@ -119,7 +123,7 @@ export default async function DashboardPage() {
       href: "/diary",
     };
   } else if (dataState === "partial") {
-    agentOpening = `${displayName}, пока картина такая.`;
+    agentOpening = agentLine("пока картина такая.");
     // What we see — as a meaningful sentence, not a list
     if (diary?.[0] && !hasVitals) {
       const score = diary[0].wellbeing_score;
@@ -158,7 +162,7 @@ export default async function DashboardPage() {
     }
   } else {
     // rich — enough data for a real observation
-    agentOpening = `${displayName}, сейчас главное вот что.`;
+    agentOpening = agentLine("сейчас главное вот что.");
     if (diary?.[0]) {
       const score = diary[0].wellbeing_score;
       const symptoms = diary[0].symptoms?.length ? diary[0].symptoms.slice(0, 2).join(", ") : null;
