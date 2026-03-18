@@ -48,54 +48,54 @@ export interface FinalStep {
 export type OnboardingStep = AgentStep | ChoiceStep | TextStep | AgentReactStep | FinalStep;
 
 // ─── PHASE 1: PRESENCE ───
-// Hook: "this will hold my picture even when I can't"
+// Warm greeting → who I am → what you get
 
 const step_intro: AgentStep = {
   type: "agent",
   id: "intro",
   lines: [
-    "Вам больше не нужно держать всё в голове.",
-    "Я запомню каждую деталь — анализы, показатели, жалобы, назначения.",
-    "Когда что-то изменится — я замечу.",
+    "Здравствуйте. Рад, что вы здесь.",
+    "Я ваш медицинский помощник — буду рядом, пока вам это нужно.",
+    "Моя задача — запоминать, замечать изменения и держать вашу картину здоровья в фокусе, чтобы вам не приходилось делать это самостоятельно.",
   ],
   button: "Продолжить",
   next: "reassure",
 };
 
-// Relief: "I won't burden you"
+// Relief: light entry, no pressure
 const step_reassure: AgentStep = {
   type: "agent",
   id: "reassure",
   lines: [
-    "Мне нужно совсем немного, чтобы начать.",
-    "Три коротких вопроса. Без анкет, без форм, без лишнего.",
+    "Сейчас — только знакомство.",
+    "Пара простых вопросов, чтобы я лучше понял вашу ситуацию. Ничего сложного.",
   ],
-  button: "Хорошо",
+  button: "Хорошо, давайте",
   next: "entry_mode",
 };
 
 // ─── PHASE 2: SOFT ENTRY ───
-// Relevance: user identifies their situation, agent meets them there
+// User identifies their situation, agent meets them there
 
 const step_entry_mode: ChoiceStep = {
   type: "choice",
   id: "entry_mode",
-  agentLine: "Какая задача сейчас перед вами?",
+  agentLine: "Что привело вас сюда?",
   options: [
     {
       label: "Есть конкретная проблема",
       value: "concern",
-      sub: "Что-то тревожит, и хочется наконец разобраться",
+      sub: "Что-то беспокоит, хочу разобраться",
     },
     {
-      label: "Хочу вести здоровье в порядке",
+      label: "Хочу следить за здоровьем",
       value: "systematic",
-      sub: "Без срочной проблемы, но не хочу упускать важное",
+      sub: "Ничего срочного, но хочу держать руку на пульсе",
     },
     {
       label: "Помогаю близкому человеку",
       value: "caregiver",
-      sub: "Хочу, чтобы ничего не терялось и не забывалось",
+      sub: "Важно, чтобы ничего не терялось",
     },
   ],
   key: "entry_mode",

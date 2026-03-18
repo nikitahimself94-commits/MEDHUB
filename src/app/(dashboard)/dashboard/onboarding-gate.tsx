@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   ONBOARDING_STEPS,
@@ -15,21 +15,26 @@ function useTypingLines(lines: string[]) {
   const [visibleLines, setVisibleLines] = useState<string[]>([]);
   const [done, setDone] = useState(false);
   const rafRef = useRef<number>(0);
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+
+  // Stable key — only re-run effect when actual content changes, not array reference
+  const linesKey = lines.join("\n");
 
   useEffect(() => {
+    const currentLinesSnapshot = linesRef.current;
     setVisibleLines([]);
     setDone(false);
     let lineIdx = 0;
     let charIdx = 0;
     let current: string[] = [];
     let lastTime = 0;
-    const INITIAL_DELAY = 400; // pause before first character
+    const INITIAL_DELAY = 400;
     let started = false;
 
     function tick(time: number) {
       if (!lastTime) lastTime = time;
 
-      // Initial delay — creates "gathering thoughts" feel
       if (!started) {
         if (time - lastTime < INITIAL_DELAY) {
           rafRef.current = requestAnimationFrame(tick);
@@ -39,14 +44,13 @@ function useTypingLines(lines: string[]) {
         lastTime = time;
       }
 
-      // Adaptive speed: short lines 30ms, long lines 18ms (cap ~2.5s per line)
-      const currentLine = lines[lineIdx] || "";
+      const currentLine = currentLinesSnapshot[lineIdx] || "";
       const charSpeed = currentLine.length > 80 ? 18 : currentLine.length > 50 ? 24 : 30;
 
       if (time - lastTime >= charSpeed) {
         lastTime = time;
-        if (lineIdx < lines.length) {
-          const line = lines[lineIdx];
+        if (lineIdx < currentLinesSnapshot.length) {
+          const line = currentLinesSnapshot[lineIdx];
           charIdx++;
           if (charIdx <= line.length) {
             current = [...current.slice(0, lineIdx), line.slice(0, charIdx)];
@@ -54,7 +58,7 @@ function useTypingLines(lines: string[]) {
           } else {
             lineIdx++;
             charIdx = 0;
-            lastTime = time + 250; // pause between lines
+            lastTime = time + 250;
           }
         } else {
           setDone(true);
@@ -66,7 +70,8 @@ function useTypingLines(lines: string[]) {
 
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [lines]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linesKey]);
 
   const skipToEnd = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
@@ -89,15 +94,16 @@ export function OnboardingGate() {
 
   const step: OnboardingStep = ONBOARDING_STEPS[stepId];
 
-  // Get lines for current step
-  const currentLines: string[] = (() => {
+  // Stabilize lines reference — recompute only when step changes
+  const currentLines: string[] = useMemo(() => {
     if (step.type === "agent") return step.lines;
     if (step.type === "agent_react") return step.getLines(answers);
     if (step.type === "final") return step.getLines(answers);
     if (step.type === "choice") return [step.agentLine];
     if (step.type === "text") return [step.agentLine];
     return [];
-  })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepId]);
 
   const { visibleLines, done: typingDone, skipToEnd } = useTypingLines(currentLines);
 
@@ -318,16 +324,14 @@ export function OnboardingGate() {
             </div>
           )}
 
-          {/* Tap anywhere on text to skip typing */}
+          {/* Clickable overlay to skip typing — invisible but tappable */}
           {!typingDone && (
             <button
               type="button"
               onClick={skipToEnd}
-              className="mt-8 text-[11px] transition opacity-0 animate-fadeInSlow"
-              style={{ color: "#2A5B55" }}
-            >
-              нажмите, чтобы продолжить
-            </button>
+              className="absolute inset-0 z-20 cursor-default"
+              aria-label="Пропустить анимацию"
+            />
           )}
         </div>
       </div>
@@ -364,13 +368,6 @@ export function OnboardingGate() {
         }
         .animate-fadeIn {
           animation: fadeIn 0.4s ease-out forwards;
-        }
-        @keyframes fadeInSlow {
-          from { opacity: 0; }
-          to { opacity: 0.5; }
-        }
-        .animate-fadeInSlow {
-          animation: fadeInSlow 1s ease-out 2s forwards;
         }
       `}</style>
     </div>
