@@ -90,13 +90,20 @@ export function DocumentForm() {
 
   if (!open) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="space-y-2">
         <button
           type="button"
           onClick={() => { setSaved(false); setError(""); setOpen(true); }}
-          className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+          className="w-full rounded-2xl border-2 border-dashed px-6 py-6 text-center transition hover:shadow-md hover:border-solid active:scale-[0.99]"
+          style={{ borderColor: "#2D6E6A", backgroundColor: "rgba(45,110,106,0.04)" }}
         >
-          + Добавить документ
+          <span className="block text-2xl" style={{ color: "#2D6E6A" }}>+</span>
+          <span className="mt-1 block text-sm font-semibold" style={{ color: "#2D6E6A" }}>
+            Загрузить документ
+          </span>
+          <span className="mt-1 block text-xs" style={{ color: "#5A8F85" }}>
+            Анализ, выписка, заключение — любой формат
+          </span>
         </button>
         {saved && <span className="text-sm text-teal-600">Сохранено</span>}
       </div>

@@ -125,7 +125,11 @@ export function ChatUI({ initialMessages, layers = [] }: { initialMessages: Mess
                     : "bg-gray-100 text-gray-800"
                 }`}
               >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                <div className="space-y-2">
+                  {msg.content.split(/\n\n+/).map((paragraph, pi) => (
+                    <p key={pi} className="whitespace-pre-wrap leading-relaxed">{paragraph.trim()}</p>
+                  ))}
+                </div>
                 <p
                   className={`mt-1 text-xs ${
                     msg.role === "user" ? "text-brand-200" : "text-gray-400"

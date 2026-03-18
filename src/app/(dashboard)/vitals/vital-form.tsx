@@ -4,12 +4,12 @@ import { useState } from "react";
 import { createVital } from "./actions";
 
 const VITAL_TYPES = [
-  { value: "blood_pressure", label: "Давление", unit: "мм рт.ст.", placeholder: "120/80" },
-  { value: "pulse", label: "Пульс", unit: "уд/мин", placeholder: "72" },
-  { value: "temperature", label: "Температура", unit: "°C", placeholder: "36.6" },
-  { value: "spo2", label: "SpO2", unit: "%", placeholder: "98" },
-  { value: "weight", label: "Вес", unit: "кг", placeholder: "70" },
-  { value: "glucose", label: "Глюкоза", unit: "ммоль/л", placeholder: "5.5" },
+  { value: "blood_pressure", label: "Давление", unit: "мм рт.ст.", placeholder: "120/80", notePlaceholder: "Сидя, стоя, после нагрузки..." },
+  { value: "pulse", label: "Пульс", unit: "уд/мин", placeholder: "72", notePlaceholder: "В покое, после нагрузки, при стрессе..." },
+  { value: "temperature", label: "Температура", unit: "°C", placeholder: "36.6", notePlaceholder: "Утро, вечер, при недомогании..." },
+  { value: "spo2", label: "SpO2", unit: "%", placeholder: "98", notePlaceholder: "В покое, после ходьбы..." },
+  { value: "weight", label: "Вес", unit: "кг", placeholder: "70", notePlaceholder: "Утром натощак, вечером..." },
+  { value: "glucose", label: "Глюкоза", unit: "ммоль/л", placeholder: "5.5", notePlaceholder: "Натощак, после еды, перед сном..." },
 ] as const;
 
 export function VitalForm() {
@@ -132,7 +132,7 @@ export function VitalForm() {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
-          placeholder="После еды, натощак..."
+          placeholder={selected.notePlaceholder}
           className={inputClass}
         />
       </div>

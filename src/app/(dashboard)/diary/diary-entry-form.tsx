@@ -149,15 +149,14 @@ export function DiaryEntryForm() {
         <div>
           <label className={labelClass}>Часы сна</label>
           <input
-            type="number"
-            step="0.5"
-            min="0"
-            max="24"
+            type="text"
+            inputMode="decimal"
             value={sleepHours}
             onChange={(e) => setSleepHours(e.target.value)}
-            placeholder="7.5"
+            placeholder="7.5 или 6-7"
             className={inputClass}
           />
+          <p className="mt-1 text-xs text-gray-400">Число или диапазон, например: 7, 6.5, 6-7</p>
         </div>
 
         <div>

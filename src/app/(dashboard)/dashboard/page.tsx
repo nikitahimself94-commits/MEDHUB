@@ -49,6 +49,20 @@ export default async function DashboardPage() {
   const usageCount = await getAiUsageCount(supabase as unknown as SupabaseClient, patientId);
 
   const displayName = profile?.display_name || "Пользователь";
+
+  // Fetch onboarding context separately — column may not exist yet (migration pending)
+  let onboardingCtx: Record<string, string> | null = null;
+  try {
+    const { data: obProfile } = await supabase
+      .from("profiles")
+      .select("onboarding_context")
+      .eq("patient_id", patientId)
+      .limit(1)
+      .maybeSingle();
+    onboardingCtx = (obProfile?.onboarding_context as Record<string, string>) ?? null;
+  } catch {
+    // Column doesn't exist yet — graceful fallback
+  }
   const activeMeds = meds ?? [];
   const lastIntake = intakes?.[0]?.taken_at;
   const lastPrep = visitPrep?.[0] ?? null;
@@ -79,20 +93,13 @@ export default async function DashboardPage() {
   const hasData = feed.length > 0 || activeMeds.length > 0;
 
   // --- Smart next step ---
-  const hasDocs = (docs ?? []).length > 0;
   const hasDiary = (diary ?? []).length > 0;
   const hasVitals = (vitals ?? []).length > 0;
   const hasPrep = !!lastPrep;
 
   let nextStep: { text: string; sub: string; href: string } | null = null;
 
-  if (!hasDocs) {
-    nextStep = {
-      text: "Загрузите первый документ",
-      sub: "Любой анализ или выписка — и система начнёт собирать вашу картину",
-      href: "/documents",
-    };
-  } else if (!hasDiary) {
+  if (!hasDiary) {
     nextStep = {
       text: "Запишите самочувствие",
       sub: "Одна запись в дневнике — и агент сможет отслеживать динамику",
@@ -181,12 +188,12 @@ export default async function DashboardPage() {
     }
   }
 
-  // 5. Low-data fallback: suggest document upload if nothing else
+  // 5. Low-data fallback: suggest any first action
   if (signals.length === 0) {
     signals.push({
-      text: "Загрузите первый документ",
-      sub: "Старый анализ или выписка — и я начну работать",
-      href: "/documents",
+      text: "Добавьте первые данные",
+      sub: "Дневник, показатели или документ — и я начну работать с вашей ситуацией",
+      href: "/diary",
       tone: "action",
     });
   }
@@ -206,7 +213,9 @@ export default async function DashboardPage() {
         <p className="mt-1 text-sm" style={{ color: "#5A8F85" }}>
           {hasData
             ? "На основе ваших данных — состояние, лекарства, последние записи"
-            : "Загрузите один документ — и я начну разбираться в вашей ситуации"}
+            : onboardingCtx?.reason
+              ? `Вы рассказали: ${onboardingCtx.reason}. Начните добавлять данные — и я смогу помогать предметнее.`
+              : "Я уже знакомлюсь с вами. Начните с любого шага — данные, дневник или вопрос в чате."}
         </p>
 
         {/* AI status summary - brief snapshot with source links */}
@@ -233,24 +242,26 @@ export default async function DashboardPage() {
         {!hasData && (
           <div className="mt-5 rounded-xl p-5" style={{ backgroundColor: "rgba(45,110,106,0.05)" }}>
             <p className="text-[15px] leading-relaxed" style={{ color: "#2D5A54" }}>
-              Дайте мне один документ — старый анализ, выписку или заключение — и я уже смогу начать работать. Не нужно заполнять всё сразу.
+              Знакомство уже началось. Чем больше данных вы добавите — тем точнее я смогу помогать. Но торопиться не нужно: начните с того, что удобно.
             </p>
-            <div className="mt-3 text-sm" style={{ color: "#5A8F85" }}>
-              <p>После загрузки вы получите:</p>
-              <ul className="mt-1.5 space-y-1 pl-4" style={{ listStyleType: "disc" }}>
-                <li>AI-разбор документа простым языком</li>
-                <li>Второе мнение — на что обратить внимание</li>
-                <li>Первую опору для дальнейшего анализа здоровья</li>
-              </ul>
-            </div>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <Link href="/documents" className="rounded-full px-5 py-2.5 text-sm font-semibold text-white text-center transition hover:shadow-md" style={{ backgroundColor: "#2D6E6A" }}>
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <Link href="/diary" className="rounded-xl px-4 py-3 text-sm font-semibold text-center transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
+                Записать самочувствие
+              </Link>
+              <Link href="/vitals" className="rounded-xl px-4 py-3 text-sm font-semibold text-center transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
+                Добавить показатель
+              </Link>
+              <Link href="/documents" className="rounded-xl px-4 py-3 text-sm font-semibold text-center transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
                 Загрузить документ
               </Link>
-              <Link href="/diary" className="rounded-full px-4 py-2.5 text-sm font-semibold text-center transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
-                Или записать самочувствие
-              </Link>
             </div>
+            <Link
+              href="/ai-chat"
+              className="mt-3 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition hover:shadow-md"
+              style={{ backgroundColor: "#2D6E6A" }}
+            >
+              Задать вопрос AI-помощнику
+            </Link>
           </div>
         )}
       </div>

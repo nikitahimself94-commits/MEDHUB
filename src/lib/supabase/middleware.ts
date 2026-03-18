@@ -42,10 +42,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If logged in and on /login, redirect to /profile
+  // If logged in and on /login, redirect to /dashboard
   if (user && request.nextUrl.pathname === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/profile";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 
