@@ -52,16 +52,16 @@ export default async function DashboardPage() {
 
   // Fetch onboarding context separately — column may not exist yet (migration pending)
   let onboardingCtx: Record<string, string> | null = null;
-  try {
-    const { data: obProfile } = await supabase
+  {
+    const { data: obProfile, error: obErr } = await supabase
       .from("profiles")
       .select("onboarding_context")
       .eq("patient_id", patientId)
       .limit(1)
       .maybeSingle();
-    onboardingCtx = (obProfile?.onboarding_context as Record<string, string>) ?? null;
-  } catch {
-    // Column doesn't exist yet — graceful fallback
+    if (!obErr) {
+      onboardingCtx = (obProfile?.onboarding_context as Record<string, string>) ?? null;
+    }
   }
   const activeMeds = meds ?? [];
   const lastIntake = intakes?.[0]?.taken_at;

@@ -36,16 +36,16 @@ async function buildContextSnapshot(
 
     // Onboarding context from first-step flow (column may not exist yet)
     let ctx: Record<string, string> | null = null;
-    try {
-      const { data: obProfile } = await sb
+    {
+      const { data: obProfile, error: obErr } = await sb
         .from("profiles")
         .select("onboarding_context")
         .eq("patient_id", patientId)
         .limit(1)
         .maybeSingle();
-      ctx = (obProfile?.onboarding_context as Record<string, string>) ?? null;
-    } catch {
-      // Column doesn't exist yet
+      if (!obErr) {
+        ctx = (obProfile?.onboarding_context as Record<string, string>) ?? null;
+      }
     }
     if (ctx && Object.keys(ctx).length > 0) {
       const labels: Record<string, string> = {
