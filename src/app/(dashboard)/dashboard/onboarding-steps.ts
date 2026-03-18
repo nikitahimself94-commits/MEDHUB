@@ -1,12 +1,13 @@
 // Fullscreen first-run welcome flow — scripted conversational scenario
 // No AI calls. Pure state machine with branching.
+// Baseline v1: 7 steps (6 typical path), 3 questions.
 
 export type StepType = "agent" | "choice" | "text" | "agent_react" | "final";
 
 export interface AgentStep {
   type: "agent";
   id: string;
-  lines: string[]; // Each line appears with typing animation
+  lines: string[];
   button: string;
   next: string;
 }
@@ -16,7 +17,7 @@ export interface ChoiceStep {
   id: string;
   agentLine: string;
   options: { label: string; value: string; sub?: string }[];
-  key: string; // saved to answers
+  key: string;
   next: string | ((value: string) => string);
 }
 
@@ -47,35 +48,23 @@ export interface FinalStep {
 
 export type OnboardingStep = AgentStep | ChoiceStep | TextStep | AgentReactStep | FinalStep;
 
-// ─── PHASE 1: PRESENCE ───
-// Warm greeting → who I am → what you get
+// ─── STEP 1: INTRO ───
+// Greeting + reassurance in one beat. No second passive screen.
 
 const step_intro: AgentStep = {
   type: "agent",
   id: "intro",
   lines: [
     "Здравствуйте. Рад, что вы здесь.",
-    "Я ваш медицинский помощник — буду рядом, пока вам это нужно.",
-    "Моя задача — запоминать, замечать изменения и держать вашу картину здоровья в фокусе, чтобы вам не приходилось делать это самостоятельно.",
-  ],
-  button: "Продолжить",
-  next: "reassure",
-};
-
-// Relief: light entry, no pressure
-const step_reassure: AgentStep = {
-  type: "agent",
-  id: "reassure",
-  lines: [
-    "Сейчас — только знакомство.",
-    "Пара простых вопросов, чтобы я лучше понял вашу ситуацию. Ничего сложного.",
+    "Я ваш медицинский помощник — буду рядом, пока вам это нужно. Моя задача — запоминать, замечать изменения и держать вашу картину здоровья в фокусе.",
+    "Сейчас — пара коротких вопросов, чтобы я понял вашу ситуацию.",
   ],
   button: "Хорошо, давайте",
   next: "entry_mode",
 };
 
-// ─── PHASE 2: SOFT ENTRY ───
-// User identifies their situation, agent meets them there
+// ─── STEP 2: ENTRY MODE ───
+// Why are you here? Three paths.
 
 const step_entry_mode: ChoiceStep = {
   type: "choice",
@@ -99,31 +88,31 @@ const step_entry_mode: ChoiceStep = {
     },
   ],
   key: "entry_mode",
-  next: "mirror",
+  next: "commit",
 };
 
-// ─── PHASE 3: CLARIFICATION ───
-// Agent mirrors choice — makes a personal promise, not a product description
+// ─── STEP 3: COMMIT ───
+// Mirrors choice + makes personal commitment + explains role. One step instead of two.
 
-const step_mirror: AgentReactStep = {
+const step_commit: AgentReactStep = {
   type: "agent_react",
-  id: "mirror",
+  id: "commit",
   getLines: (answers) => {
     switch (answers.entry_mode) {
       case "concern":
         return [
           "Я не дам вам потерять нить.",
-          "Когда придёте к врачу — у вас будет чёткая картина, а не обрывки из памяти.",
+          "Каждый анализ, каждая жалоба, каждый показатель — ничего не потеряется. Когда придёте к врачу — у вас будет чёткая картина, а не обрывки из памяти.",
         ];
       case "systematic":
         return [
           "Я замечу то, что легко пропустить в рутине.",
-          "Мелкие изменения, которые по отдельности ничего не значат — вместе могут значить многое.",
+          "Зафиксирую каждое изменение и покажу, если что-то заслуживает внимания. Мелкие сигналы, которые по отдельности ничего не значат — вместе могут значить многое.",
         ];
       case "caregiver":
         return [
           "Вы не обязаны помнить всё.",
-          "Я буду держать картину — чтобы вы могли быть рядом с человеком, а не с бумагами.",
+          "Лекарства, назначения, результаты, даты — я запомню. Чтобы вы могли быть рядом с человеком, а не с бумагами.",
         ];
       default:
         return ["Понял. Давайте продолжим."];
@@ -132,6 +121,8 @@ const step_mirror: AgentReactStep = {
   button: "Дальше",
   next: "chronic",
 };
+
+// ─── STEP 4: CHRONIC ───
 
 const step_chronic: ChoiceStep = {
   type: "choice",
@@ -146,6 +137,8 @@ const step_chronic: ChoiceStep = {
   next: (value) => (value === "yes" ? "chronic_detail" : "has_documents"),
 };
 
+// ─── STEP 4b: CHRONIC DETAIL (branch) ───
+
 const step_chronic_detail: TextStep = {
   type: "text",
   id: "chronic_detail",
@@ -155,6 +148,8 @@ const step_chronic_detail: TextStep = {
   next: "has_documents",
   optional: true,
 };
+
+// ─── STEP 5: DOCUMENTS ───
 
 const step_has_documents: ChoiceStep = {
   type: "choice",
@@ -166,59 +161,10 @@ const step_has_documents: ChoiceStep = {
     { label: "Разберусь позже", value: "later" },
   ],
   key: "has_documents",
-  next: "goal",
-};
-
-const step_goal: TextStep = {
-  type: "text",
-  id: "goal",
-  agentLine: "Чем я могу помочь прямо сейчас?",
-  placeholder: "Например: подготовиться к приёму, разобрать анализы, не забывать записывать",
-  key: "primary_goal",
-  next: "role_explain",
-  optional: true,
-};
-
-// ─── PHASE 4: PERSONAL ROLE EXPLANATION ───
-// Clarity: agent commits, using user's own answers. Not product features — personal promises.
-
-const step_role_explain: AgentReactStep = {
-  type: "agent_react",
-  id: "role_explain",
-  getLines: (answers) => {
-    const lines: string[] = [];
-
-    if (answers.entry_mode === "concern") {
-      lines.push("Теперь я слежу за вашей ситуацией.");
-      lines.push("Каждый анализ, каждая жалоба, каждый показатель — ничего не потеряется.");
-    } else if (answers.entry_mode === "caregiver") {
-      lines.push("Теперь эта нагрузка не только на вас.");
-      lines.push("Лекарства, назначения, результаты, даты — я запомню всё.");
-    } else {
-      lines.push("Теперь у вас есть память, которая не подведёт.");
-      lines.push("Я зафиксирую каждое изменение и покажу, если что-то заслуживает внимания.");
-    }
-
-    if (answers.has_chronic === "yes" && answers.chronic_detail) {
-      lines.push(`${answers.chronic_detail} — я уже учёл. Это будет частью каждого моего ответа.`);
-    }
-
-    if (answers.entry_mode === "concern") {
-      lines.push("Когда придёт время разговора с врачом — всё главное будет собрано.");
-    } else if (answers.entry_mode === "caregiver") {
-      lines.push("Вам останется только быть рядом.");
-    } else {
-      lines.push("Не нужно помнить — я помню за вас.");
-    }
-
-    return lines;
-  },
-  button: "Понятно",
   next: "first_action",
 };
 
-// ─── PHASE 5: FIRST STEP + ENTRY ───
-// Inevitability: not "choose what to do" but "here is what we do now"
+// ─── STEP 6: FIRST ACTION ───
 
 const step_first_action: FinalStep = {
   type: "final",
@@ -247,14 +193,11 @@ const step_first_action: FinalStep = {
 
 export const ONBOARDING_STEPS: Record<string, OnboardingStep> = {
   intro: step_intro,
-  reassure: step_reassure,
   entry_mode: step_entry_mode,
-  mirror: step_mirror,
+  commit: step_commit,
   chronic: step_chronic,
   chronic_detail: step_chronic_detail,
   has_documents: step_has_documents,
-  goal: step_goal,
-  role_explain: step_role_explain,
   first_action: step_first_action,
 };
 

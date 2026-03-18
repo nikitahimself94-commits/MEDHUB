@@ -340,9 +340,9 @@ export function OnboardingGate() {
       <div className="relative z-10 px-6 pb-6">
         {(() => {
           // Build actual step sequence based on answers (excludes skipped steps)
-          const base = ["intro", "reassure", "entry_mode", "mirror", "chronic"];
+          const base = ["intro", "entry_mode", "commit", "chronic"];
           if (answers.has_chronic === "yes") base.push("chronic_detail");
-          base.push("has_documents", "goal", "role_explain", "first_action");
+          base.push("has_documents", "first_action");
           const idx = base.indexOf(stepId);
           return (
             <div className="flex gap-1">
