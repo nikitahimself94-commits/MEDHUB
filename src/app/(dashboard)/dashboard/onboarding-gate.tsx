@@ -18,11 +18,10 @@ function useTypingLines(lines: string[]) {
   const linesRef = useRef(lines);
   linesRef.current = lines;
 
-  // Stable key — only re-run effect when actual content changes, not array reference
   const linesKey = lines.join("\n");
 
   useEffect(() => {
-    const currentLinesSnapshot = linesRef.current;
+    const snapshot = linesRef.current;
     setVisibleLines([]);
     setDone(false);
     let lineIdx = 0;
@@ -44,13 +43,13 @@ function useTypingLines(lines: string[]) {
         lastTime = time;
       }
 
-      const currentLine = currentLinesSnapshot[lineIdx] || "";
+      const currentLine = snapshot[lineIdx] || "";
       const charSpeed = currentLine.length > 80 ? 18 : currentLine.length > 50 ? 24 : 30;
 
       if (time - lastTime >= charSpeed) {
         lastTime = time;
-        if (lineIdx < currentLinesSnapshot.length) {
-          const line = currentLinesSnapshot[lineIdx];
+        if (lineIdx < snapshot.length) {
+          const line = snapshot[lineIdx];
           charIdx++;
           if (charIdx <= line.length) {
             current = [...current.slice(0, lineIdx), line.slice(0, charIdx)];
@@ -75,9 +74,9 @@ function useTypingLines(lines: string[]) {
 
   const skipToEnd = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
-    setVisibleLines([...lines]);
+    setVisibleLines([...linesRef.current]);
     setDone(true);
-  }, [lines]);
+  }, []);
 
   return { visibleLines, done, skipToEnd };
 }
@@ -94,13 +93,13 @@ export function OnboardingGate() {
 
   const step: OnboardingStep = ONBOARDING_STEPS[stepId];
 
-  // Stabilize lines reference — recompute only when step changes
+  // Stabilize lines — recompute only when step changes
   const currentLines: string[] = useMemo(() => {
     if (step.type === "agent") return step.lines;
     if (step.type === "agent_react") return step.getLines(answers);
     if (step.type === "final") return step.getLines(answers);
-    if (step.type === "choice") return [step.agentLine];
-    if (step.type === "text") return [step.agentLine];
+    if (step.type === "choice") return step.agentLines;
+    if (step.type === "text") return step.agentLines;
     return [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepId]);
@@ -117,20 +116,19 @@ export function OnboardingGate() {
   }
 
   function handleChoice(value: string) {
-    setAnswers((prev) => ({ ...prev, [step.type === "choice" ? (step as { key: string }).key : ""]: value }));
-    const s = step as { next: string | ((v: string) => string) };
-    const nextId = typeof s.next === "function" ? s.next(value) : s.next;
+    if (step.type !== "choice") return;
+    setAnswers((prev) => ({ ...prev, [step.key]: value }));
+    const nextId = typeof step.next === "function" ? step.next(value) : step.next;
     goTo(nextId);
   }
 
   function handleTextSubmit() {
+    if (step.type !== "text") return;
     const trimmed = textValue.trim();
-    if (step.type === "text") {
-      if (trimmed) {
-        setAnswers((prev) => ({ ...prev, [step.key]: trimmed }));
-      }
-      goTo(step.next);
+    if (trimmed) {
+      setAnswers((prev) => ({ ...prev, [step.key]: trimmed }));
     }
+    goTo(step.next);
   }
 
   function handleAgentContinue() {
@@ -138,8 +136,13 @@ export function OnboardingGate() {
       skipToEnd();
       return;
     }
-    if (step.type === "agent") goTo(step.next);
-    if (step.type === "agent_react") goTo(step.next);
+    if (step.type === "agent") {
+      goTo(step.next);
+    }
+    if (step.type === "agent_react") {
+      const nextId = typeof step.next === "function" ? step.next(answers) : step.next;
+      goTo(nextId);
+    }
   }
 
   async function handleFinish(href: string) {
@@ -147,7 +150,7 @@ export function OnboardingGate() {
     try {
       await completeOnboarding(answers);
     } catch {
-      // Don't block — localStorage fallback is fine
+      // Don't block
     }
     router.push(href);
     router.refresh();
@@ -168,9 +171,9 @@ export function OnboardingGate() {
         }}
       />
 
-      {/* Content area — centered vertically */}
+      {/* Scrollable content area — centered vertically */}
       <div
-        className={`relative z-10 flex flex-1 flex-col items-center justify-center px-6 transition-opacity duration-300 ${
+        className={`relative z-10 flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-10 transition-opacity duration-300 ${
           transitioning ? "opacity-0" : "opacity-100"
         }`}
       >
@@ -186,10 +189,8 @@ export function OnboardingGate() {
           )}
 
           {/* Typing lines */}
-          <div className="min-h-[120px] space-y-3">
+          <div className="min-h-[100px] space-y-3">
             {visibleLines.map((line, i) => {
-              // First line of agent/react/final = bold headline
-              // For choice/text steps = all lines are questions, white + prominent
               const isHeadline = i === 0 && (step.type === "agent" || step.type === "agent_react" || step.type === "final");
               const isQuestion = step.type === "choice" || step.type === "text";
               return (
@@ -218,7 +219,7 @@ export function OnboardingGate() {
           {/* Interactive area — shows after typing completes */}
           {typingDone && (
             <div className="mt-8 animate-fadeIn">
-              {/* Agent step → continue button */}
+              {/* Agent / agent_react → continue button */}
               {(step.type === "agent" || step.type === "agent_react") && (
                 <button
                   type="button"
@@ -230,7 +231,7 @@ export function OnboardingGate() {
                 </button>
               )}
 
-              {/* Choice step → option cards */}
+              {/* Choice → option cards */}
               {step.type === "choice" && (
                 <div className="space-y-2.5">
                   {step.options.map((opt) => (
@@ -250,7 +251,7 @@ export function OnboardingGate() {
                 </div>
               )}
 
-              {/* Text step → input + submit */}
+              {/* Text → input + submit */}
               {step.type === "text" && (
                 <div>
                   <textarea
@@ -263,7 +264,7 @@ export function OnboardingGate() {
                       }
                     }}
                     placeholder={step.placeholder}
-                    rows={2}
+                    rows={3}
                     autoFocus
                     className="w-full rounded-xl px-5 py-3.5 text-[15px] text-white placeholder:text-white/30 resize-none outline-none transition-all focus:ring-2 focus:ring-white/10"
                     style={{ backgroundColor: "rgba(45,110,106,0.15)", border: "1px solid rgba(45,110,106,0.25)" }}
@@ -275,7 +276,7 @@ export function OnboardingGate() {
                       className="rounded-xl px-6 py-3 text-[15px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
                       style={{ backgroundColor: "#2D6E6A" }}
                     >
-                      Дальше
+                      {step.buttonText || "Дальше"}
                     </button>
                     {step.optional && !textValue.trim() && (
                       <button
@@ -291,40 +292,22 @@ export function OnboardingGate() {
                 </div>
               )}
 
-              {/* Final step → entry CTA */}
+              {/* Final → single entry CTA */}
               {step.type === "final" && (
-                <div className="space-y-3">
-                  {(() => {
-                    const action = step.getAction(answers);
-                    return (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleFinish(action.href)}
-                          disabled={saving}
-                          className="w-full rounded-xl px-6 py-4 text-[15px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
-                          style={{ backgroundColor: "#2D6E6A" }}
-                        >
-                          {saving ? "Сохраняю..." : action.label}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleFinish("/dashboard")}
-                          disabled={saving}
-                          className="w-full text-center text-[13px] py-2 transition"
-                          style={{ color: "#4A8A82" }}
-                        >
-                          Перейти на главную
-                        </button>
-                      </>
-                    );
-                  })()}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleFinish(step.getAction(answers).href)}
+                  disabled={saving}
+                  className="w-full rounded-xl px-6 py-4 text-[15px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+                  style={{ backgroundColor: "#2D6E6A" }}
+                >
+                  {saving ? "Сохраняю..." : step.getAction(answers).label}
+                </button>
               )}
             </div>
           )}
 
-          {/* Clickable overlay to skip typing — invisible but tappable */}
+          {/* Invisible tap overlay to skip typing */}
           {!typingDone && (
             <button
               type="button"
@@ -336,17 +319,22 @@ export function OnboardingGate() {
         </div>
       </div>
 
-      {/* Progress bar — very subtle at bottom, based on actual path */}
+      {/* Progress bar — 7 steps, based on actual branch */}
       <div className="relative z-10 px-6 pb-6">
         {(() => {
-          // Build actual step sequence based on answers (excludes skipped steps)
-          const base = ["intro", "entry_mode", "commit", "chronic"];
-          if (answers.has_chronic === "yes") base.push("chronic_detail");
-          base.push("has_documents", "first_action");
-          const idx = base.indexOf(stepId);
+          const path: string[] = ["intro", "fork"];
+          if (answers.entry_mode === "diagnosis") path.push("branch_a", "focus_ab");
+          else if (answers.entry_mode === "caregiver") path.push("branch_b", "focus_ab");
+          else if (answers.entry_mode === "systematic") path.push("branch_c", "focus_c");
+          else path.push("_branch", "_focus"); // before fork choice, show 7 neutral segments
+          path.push("transition");
+          if (answers.entry_mode === "systematic") path.push("context_c");
+          else path.push("context_ab");
+          path.push("handoff");
+          const idx = path.indexOf(stepId);
           return (
             <div className="flex gap-1">
-              {base.map((_, i) => (
+              {path.map((_, i) => (
                 <div
                   key={i}
                   className="h-0.5 flex-1 rounded-full transition-all duration-500"

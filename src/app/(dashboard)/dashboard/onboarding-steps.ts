@@ -1,8 +1,5 @@
-// Fullscreen first-run welcome flow — scripted conversational scenario
+// Fullscreen first-run welcome flow — approved scenario, exact copy.
 // No AI calls. Pure state machine with branching.
-// Baseline v1: 7 steps (6 typical path), 3 questions.
-
-export type StepType = "agent" | "choice" | "text" | "agent_react" | "final";
 
 export interface AgentStep {
   type: "agent";
@@ -15,7 +12,7 @@ export interface AgentStep {
 export interface ChoiceStep {
   type: "choice";
   id: string;
-  agentLine: string;
+  agentLines: string[];
   options: { label: string; value: string; sub?: string }[];
   key: string;
   next: string | ((value: string) => string);
@@ -24,11 +21,12 @@ export interface ChoiceStep {
 export interface TextStep {
   type: "text";
   id: string;
-  agentLine: string;
+  agentLines: string[];
   placeholder: string;
   key: string;
   next: string;
   optional?: boolean;
+  buttonText?: string;
 }
 
 export interface AgentReactStep {
@@ -36,7 +34,7 @@ export interface AgentReactStep {
   id: string;
   getLines: (answers: Record<string, string>) => string[];
   button: string;
-  next: string;
+  next: string | ((answers: Record<string, string>) => string);
 }
 
 export interface FinalStep {
@@ -48,157 +46,211 @@ export interface FinalStep {
 
 export type OnboardingStep = AgentStep | ChoiceStep | TextStep | AgentReactStep | FinalStep;
 
-// ─── STEP 1: INTRO ───
-// Greeting + reassurance in one beat. No second passive screen.
+// ═══════════════════════════════════════════
+// ЭКРАН 1 — Первая встреча
+// ═══════════════════════════════════════════
 
 const step_intro: AgentStep = {
   type: "agent",
   id: "intro",
   lines: [
     "Здравствуйте. Рад, что вы здесь.",
-    "Я ваш медицинский помощник — буду рядом, пока вам это нужно. Моя задача — запоминать, замечать изменения и держать вашу картину здоровья в фокусе.",
-    "Сейчас — пара коротких вопросов, чтобы я понял вашу ситуацию.",
+    "Я ваш медицинский помощник. Моя задача — держать всю вашу картину здоровья в одном фокусе: анализы, симптомы, показатели, документы, назначения, изменения со временем.",
+    "Вам не нужно удерживать это в голове самостоятельно. Я запоминаю важное, замечаю, когда что-то меняется, и помогаю приходить к врачу не с обрывками из памяти, а с ясной картиной.",
+    "А когда данных становится достаточно — я дополнительно сверяю вашу ситуацию с актуальными научными исследованиями и возвращаюсь с тем, что действительно стоит проверить и обсудить.",
+    "Вы живёте. Я держу картину.",
   ],
   button: "Хорошо, давайте",
-  next: "entry_mode",
+  next: "fork",
 };
 
-// ─── STEP 2: ENTRY MODE ───
-// Why are you here? Three paths.
+// ═══════════════════════════════════════════
+// ЭКРАН 2 — Развилка
+// ═══════════════════════════════════════════
 
-const step_entry_mode: ChoiceStep = {
+const step_fork: ChoiceStep = {
   type: "choice",
-  id: "entry_mode",
-  agentLine: "Что привело вас сюда?",
+  id: "fork",
+  agentLines: ["Скажите, что сейчас ближе к вашей ситуации?"],
   options: [
-    {
-      label: "Есть конкретная проблема",
-      value: "concern",
-      sub: "Что-то беспокоит, хочу разобраться",
-    },
-    {
-      label: "Хочу следить за здоровьем",
-      value: "systematic",
-      sub: "Ничего срочного, но хочу держать руку на пульсе",
-    },
-    {
-      label: "Помогаю близкому человеку",
-      value: "caregiver",
-      sub: "Важно, чтобы ничего не терялось",
-    },
+    { label: "У меня есть диагноз или хроническое состояние", value: "diagnosis" },
+    { label: "Помогаю близкому человеку", value: "caregiver" },
+    { label: "Просто хочу следить за здоровьем", value: "systematic" },
   ],
   key: "entry_mode",
-  next: "commit",
+  next: (value) => {
+    if (value === "diagnosis") return "branch_a";
+    if (value === "caregiver") return "branch_b";
+    return "branch_c";
+  },
 };
 
-// ─── STEP 3: COMMIT ───
-// Mirrors choice + makes personal commitment + explains role. One step instead of two.
+// ═══════════════════════════════════════════
+// ВЕТКА А — есть диагноз или хроническое состояние
+// ═══════════════════════════════════════════
 
-const step_commit: AgentReactStep = {
-  type: "agent_react",
-  id: "commit",
-  getLines: (answers) => {
-    switch (answers.entry_mode) {
-      case "concern":
-        return [
-          "Я не дам вам потерять нить.",
-          "Каждый анализ, каждая жалоба, каждый показатель — ничего не потеряется. Когда придёте к врачу — у вас будет чёткая картина, а не обрывки из памяти.",
-        ];
-      case "systematic":
-        return [
-          "Я замечу то, что легко пропустить в рутине.",
-          "Зафиксирую каждое изменение и покажу, если что-то заслуживает внимания. Мелкие сигналы, которые по отдельности ничего не значат — вместе могут значить многое.",
-        ];
-      case "caregiver":
-        return [
-          "Вы не обязаны помнить всё.",
-          "Лекарства, назначения, результаты, даты — я запомню. Чтобы вы могли быть рядом с человеком, а не с бумагами.",
-        ];
-      default:
-        return ["Понял. Давайте продолжим."];
-    }
-  },
+const step_branch_a: AgentStep = {
+  type: "agent",
+  id: "branch_a",
+  lines: [
+    "Я понимаю, как это обычно бывает.",
+    "Анализы лежат в одной папке, заключения — в другой, симптомы держатся в голове, а каждый новый врач видит только часть истории. В какой-то момент человек сам становится архивом своей болезни — и это изматывает.",
+    "Теперь это моя работа. Я буду собирать вашу картину целиком, удерживать важные детали, замечать изменения и помогать вам лучше понимать, что происходит.",
+    "Когда накопится достаточно данных, я сам начну подсказывать, на что стоит обратить внимание и о чём имеет смысл поговорить с врачом.",
+    "Вы не должны тащить всю эту картину в одиночку.",
+  ],
   button: "Дальше",
-  next: "chronic",
+  next: "focus_ab",
 };
 
-// ─── STEP 4: CHRONIC ───
+// ═══════════════════════════════════════════
+// ВЕТКА Б — помогаю близкому
+// ═══════════════════════════════════════════
 
-const step_chronic: ChoiceStep = {
-  type: "choice",
-  id: "chronic",
-  agentLine: "Есть что-то, с чем вы живёте давно?",
-  options: [
-    { label: "Да", value: "yes" },
-    { label: "Нет", value: "no" },
-    { label: "Сложно сказать", value: "unsure" },
+const step_branch_b: AgentStep = {
+  type: "agent",
+  id: "branch_b",
+  lines: [
+    "Это действительно тяжело.",
+    "Когда вы помогаете близкому, приходится помнить слишком многое: диагнозы, назначения, обследования, симптомы, визиты, изменения по самочувствию. И всё это очень легко начинает рассыпаться на куски.",
+    "Я возьму эту нагрузку на себя. Буду удерживать картину здоровья целиком, замечать важные изменения и помогать вам готовиться к визитам не на памяти, а на фактах.",
+    "Вы сможете быть рядом с человеком, а не жить в режиме бесконечного контроля и страха что-то упустить.",
   ],
-  key: "has_chronic",
-  next: (value) => (value === "yes" ? "chronic_detail" : "has_documents"),
+  button: "Дальше",
+  next: "focus_ab",
 };
 
-// ─── STEP 4b: CHRONIC DETAIL (branch) ───
+// ═══════════════════════════════════════════
+// ВЕТКА В — просто следить за здоровьем
+// ═══════════════════════════════════════════
 
-const step_chronic_detail: TextStep = {
+const step_branch_c: AgentStep = {
+  type: "agent",
+  id: "branch_c",
+  lines: [
+    "Это сильный подход.",
+    "Большинство начинают разбираться со здоровьем уже тогда, когда что-то пошло не так. Вы можете действовать раньше — спокойно, системно и без суеты.",
+    "Я помогу собирать всю картину в одном месте: показатели, самочувствие, документы, наблюдения со временем. Так становятся видны закономерности, которые трудно заметить самому, пока всё разбросано или кажется незначительным.",
+    "Чем раньше появляется структура, тем выше шанс заметить важное до того, как проблема станет большой.",
+  ],
+  button: "Дальше",
+  next: "focus_c",
+};
+
+// ═══════════════════════════════════════════
+// ШАГ 3 — Что сейчас важнее всего (для А и Б)
+// ═══════════════════════════════════════════
+
+const step_focus_ab: ChoiceStep = {
+  type: "choice",
+  id: "focus_ab",
+  agentLines: ["Что сейчас ближе всего к вашей ситуации?"],
+  options: [
+    { label: "Есть симптомы или вопросы, на которые пока нет ответа", value: "symptoms_questions" },
+    { label: "Есть состояние, за которым нужно регулярно следить", value: "monitoring" },
+    { label: "Есть анализы или заключения, которые хочется понять", value: "understand_docs" },
+  ],
+  key: "current_focus",
+  next: "transition",
+};
+
+// ═══════════════════════════════════════════
+// ШАГ 3 — На что сейчас хочется сделать упор (для В)
+// ═══════════════════════════════════════════
+
+const step_focus_c: ChoiceStep = {
+  type: "choice",
+  id: "focus_c",
+  agentLines: ["На что сейчас хочется сделать упор?"],
+  options: [
+    { label: "Есть анализы или симптомы, которые хочу разобрать", value: "analyze" },
+    { label: "Хочу просто наблюдать за собой системно", value: "observe" },
+    { label: "Хочу быть лучше готовым к плановым визитам к врачу", value: "visit_prep" },
+  ],
+  key: "current_focus",
+  next: "transition",
+};
+
+// ═══════════════════════════════════════════
+// ШАГ 4 — Переход к личному контексту
+// ═══════════════════════════════════════════
+
+const step_transition: AgentReactStep = {
+  type: "agent_react",
+  id: "transition",
+  getLines: () => [
+    "Хорошо. Я понял, с какого угла нам лучше начать.",
+    "Теперь мне нужен только короткий контекст от вас — буквально несколько слов. Этого уже хватит, чтобы дальше я вёл именно вашу ситуацию, а не говорил общими фразами.",
+  ],
+  button: "Дальше",
+  next: (answers) => answers.entry_mode === "systematic" ? "context_c" : "context_ab",
+};
+
+// ═══════════════════════════════════════════
+// ШАГ 5 — Коротко о вашей ситуации (для А и Б)
+// ═══════════════════════════════════════════
+
+const step_context_ab: TextStep = {
   type: "text",
-  id: "chronic_detail",
-  agentLine: "Просто назовите — мне хватит одного слова.",
-  placeholder: "Например: диабет, гипертония, наблюдение после операции",
-  key: "chronic_detail",
-  next: "has_documents",
-  optional: true,
-};
-
-// ─── STEP 5: DOCUMENTS ───
-
-const step_has_documents: ChoiceStep = {
-  type: "choice",
-  id: "has_documents",
-  agentLine: "У вас есть какие-то документы — анализы, выписки, снимки?",
-  options: [
-    { label: "Да, есть", value: "yes" },
-    { label: "Пока нет", value: "no" },
-    { label: "Разберусь позже", value: "later" },
+  id: "context_ab",
+  agentLines: [
+    "Расскажите коротко, с чем вы пришли.",
+    "Не нужно писать подробно. Пары слов о том, что сейчас самое важное, уже достаточно, чтобы я понял, на что смотреть в первую очередь.",
   ],
-  key: "has_documents",
-  next: "first_action",
+  placeholder: "",
+  key: "user_context",
+  next: "handoff",
+  buttonText: "Готово",
 };
 
-// ─── STEP 6: FIRST ACTION ───
+// ═══════════════════════════════════════════
+// ШАГ 5 — Расскажите немного о себе (для В)
+// ═══════════════════════════════════════════
 
-const step_first_action: FinalStep = {
+const step_context_c: TextStep = {
+  type: "text",
+  id: "context_c",
+  agentLines: [
+    "Расскажите немного о себе.",
+    "Есть ли что-то, за чем особенно хотите следить? Или ваша задача — просто держать здоровье в порядке и ничего не упускать?",
+  ],
+  placeholder: "",
+  key: "user_context",
+  next: "handoff",
+  buttonText: "Готово",
+};
+
+// ═══════════════════════════════════════════
+// ШАГ 6 — Передача в продукт
+// ═══════════════════════════════════════════
+
+const step_handoff: FinalStep = {
   type: "final",
-  id: "first_action",
-  getLines: (answers) => {
-    if (answers.has_documents === "yes") {
-      return [
-        "Первый шаг — прямо сейчас.",
-        "Загрузите любой документ — анализ, выписку, что угодно. Мне не нужен идеальный файл. Нужна первая опора.",
-      ];
-    }
-    return [
-      "Первый шаг — прямо сейчас.",
-      "Просто запишите, как вы себя чувствуете. Одного предложения хватит — дальше я подхвачу.",
-    ];
-  },
-  getAction: (answers) => {
-    if (answers.has_documents === "yes") {
-      return { label: "Загрузить документ", href: "/documents" };
-    }
-    return { label: "Записать самочувствие", href: "/diary" };
-  },
+  id: "handoff",
+  getLines: () => [
+    "Этого уже достаточно, чтобы начать.",
+    "Я запомнил, что вы рассказали, и дальше буду опираться на это в работе. Когда вы добавите данные — документы, показатели, записи о самочувствии — моя картина станет точнее, а рекомендации и наблюдения предметнее.",
+    "Сейчас я переведу вас в рабочее пространство. Там мы сделаем первый шаг и начнём собирать вашу картину спокойно и последовательно.",
+  ],
+  getAction: () => ({ label: "Войти в MedHub", href: "/dashboard" }),
 };
 
-// ─── STEP REGISTRY ───
+// ═══════════════════════════════════════════
+// REGISTRY
+// ═══════════════════════════════════════════
 
 export const ONBOARDING_STEPS: Record<string, OnboardingStep> = {
   intro: step_intro,
-  entry_mode: step_entry_mode,
-  commit: step_commit,
-  chronic: step_chronic,
-  chronic_detail: step_chronic_detail,
-  has_documents: step_has_documents,
-  first_action: step_first_action,
+  fork: step_fork,
+  branch_a: step_branch_a,
+  branch_b: step_branch_b,
+  branch_c: step_branch_c,
+  focus_ab: step_focus_ab,
+  focus_c: step_focus_c,
+  transition: step_transition,
+  context_ab: step_context_ab,
+  context_c: step_context_c,
+  handoff: step_handoff,
 };
 
 export const FIRST_STEP_ID = "intro";
