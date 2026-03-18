@@ -6,7 +6,7 @@ import { AiUsageStatus } from "@/components/ai-usage-status";
 import { OnboardingModal } from "./onboarding-modal";
 import { InlineAi } from "./inline-ai";
 import { AiSummary } from "./ai-summary";
-import { DataFreshness } from "./data-freshness";
+
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const QUICK_ACTIONS = [
@@ -90,33 +90,83 @@ export default async function DashboardPage() {
   recent.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const feed = recent.slice(0, 6);
 
-  const hasData = feed.length > 0 || activeMeds.length > 0;
-
-  // --- Smart next step ---
   const hasDiary = (diary ?? []).length > 0;
   const hasVitals = (vitals ?? []).length > 0;
+  const hasDocs = (docs ?? []).length > 0;
   const hasPrep = !!lastPrep;
+  const dataLayers = [hasDiary, hasVitals, hasDocs, activeMeds.length > 0].filter(Boolean).length;
+  const dataState: "empty" | "partial" | "rich" = dataLayers === 0 ? "empty" : dataLayers <= 2 ? "partial" : "rich";
 
-  let nextStep: { text: string; sub: string; href: string } | null = null;
+  // --- Agent observation (1 main insight) ---
+  let agentOpening = "";
+  let agentObservation = "";
+  let agentNextStep: { text: string; href: string } = { text: "", href: "" };
 
-  if (!hasDiary) {
-    nextStep = {
-      text: "Запишите самочувствие",
-      sub: "Одна запись в дневнике — и агент сможет отслеживать динамику",
-      href: "/diary",
-    };
-  } else if (!hasVitals) {
-    nextStep = {
-      text: "Добавьте первый показатель",
-      sub: "Давление, пульс или вес — это усилит аналитику",
-      href: "/vitals",
-    };
-  } else if (!hasPrep) {
-    nextStep = {
-      text: "Подготовьте сводку для врача",
-      sub: "Данных уже достаточно — AI соберёт структурированный отчёт",
-      href: "/doctor-visit",
-    };
+  if (dataState === "empty") {
+    agentOpening = `${displayName}, я готов начать работать с вами.`;
+    if (onboardingCtx?.reason) {
+      agentObservation = `Вы рассказали: ${onboardingCtx.reason}. Мне нужна первая опора — любые данные о вашем состоянии, чтобы начать разбираться.`;
+    } else if (onboardingCtx?.current_concern) {
+      agentObservation = `Вы упомянули: ${onboardingCtx.current_concern}. Запишите самочувствие или загрузите документ — и я смогу начать работать с этим.`;
+    } else {
+      agentObservation = "У меня пока нет данных о вашем состоянии. Дайте мне первую опору — дневник, показатель или документ — и я начну собирать картину.";
+    }
+    agentNextStep = { text: "Записать самочувствие", href: "/diary" };
+  } else if (dataState === "partial") {
+    agentOpening = `${displayName}, я посмотрел ваши данные.`;
+    // Build observation from what we have
+    const parts: string[] = [];
+    if (diary?.[0]) {
+      const score = diary[0].wellbeing_score;
+      const scoreWord = score >= 7 ? "стабильное" : score >= 4 ? "среднее" : "ниже обычного";
+      parts.push(`последнее самочувствие ${scoreWord} (${score}/10)`);
+    }
+    if (vitals?.[0]) {
+      parts.push(`${vitalLabels[vitals[0].vital_type] || vitals[0].vital_type}: ${vitals[0].value} ${vitals[0].unit}`);
+    }
+    if (activeMeds.length > 0) {
+      parts.push(`${activeMeds.length} активных препаратов`);
+    }
+    const seen = parts.length > 0 ? `Я вижу: ${parts.join(", ")}.` : "";
+    const missing: string[] = [];
+    if (!hasDiary) missing.push("дневника");
+    if (!hasVitals) missing.push("показателей");
+    if (!hasDocs) missing.push("документов");
+    const gap = missing.length > 0 ? ` Картина пока неполная — не хватает ${missing.join(" и ")}.` : "";
+    agentObservation = seen + gap;
+    // Next step: fill the biggest gap
+    if (!hasDiary) agentNextStep = { text: "Записать самочувствие", href: "/diary" };
+    else if (!hasVitals) agentNextStep = { text: "Добавить показатель", href: "/vitals" };
+    else if (!hasDocs) agentNextStep = { text: "Загрузить документ", href: "/documents" };
+    else agentNextStep = { text: "Подготовить сводку для врача", href: "/doctor-visit" };
+  } else {
+    // rich
+    agentOpening = `${displayName}, вот что сейчас выглядит главным.`;
+    // Derive main insight
+    if (diary?.[0]) {
+      const score = diary[0].wellbeing_score;
+      const symptoms = diary[0].symptoms?.length ? diary[0].symptoms.slice(0, 2).join(", ") : null;
+      if (score <= 4) {
+        agentObservation = `Самочувствие ${score}/10${symptoms ? ` (${symptoms})` : ""} — это ниже обычного. Стоит отслеживать динамику ближайшие дни.`;
+      } else if (symptoms) {
+        agentObservation = `Самочувствие ${score}/10, но есть ${symptoms}. По остальным данным картина стабильная.`;
+      } else {
+        agentObservation = `Самочувствие ${score}/10, данные поступают регулярно. Картина стабильная.`;
+      }
+    } else {
+      agentObservation = "Данные поступают из нескольких источников. Картина складывается.";
+    }
+    // Next step for rich state
+    if (!hasPrep) {
+      agentNextStep = { text: "Подготовить сводку для врача", href: "/doctor-visit" };
+    } else {
+      const diaryToday = diary?.[0] && new Date(diary[0].created_at) >= getLocalDayStart();
+      if (!diaryToday) {
+        agentNextStep = { text: "Записать сегодняшнее самочувствие", href: "/diary" };
+      } else {
+        agentNextStep = { text: "Задать вопрос по данным", href: "/ai-chat" };
+      }
+    }
   }
 
   // --- "Что важно сегодня" signals ---
@@ -201,111 +251,93 @@ export default async function DashboardPage() {
   // Cap at 4 signals
   const todaySignals = signals.slice(0, 4);
 
+  // --- Evidence items for the hero ---
+  interface EvidenceItem { label: string; detail: string; href: string }
+  const evidence: EvidenceItem[] = [];
+  if (diary?.[0]) {
+    const daysAgo = Math.floor((Date.now() - new Date(diary[0].created_at).getTime()) / 86400000);
+    evidence.push({
+      label: "Дневник",
+      detail: daysAgo === 0 ? "сегодня" : daysAgo === 1 ? "вчера" : `${daysAgo} дн. назад`,
+      href: "/diary",
+    });
+  }
+  if (vitals?.[0]) {
+    evidence.push({
+      label: vitalLabels[vitals[0].vital_type] || "Показатель",
+      detail: `${vitals[0].value} ${vitals[0].unit}`,
+      href: "/vitals",
+    });
+  }
+  if (activeMeds.length > 0) {
+    evidence.push({ label: "Лекарства", detail: `${activeMeds.length} активных`, href: "/medications" });
+  }
+  if (docs?.[0]) {
+    evidence.push({ label: "Документы", detail: `${(docs ?? []).length} загружено`, href: "/documents" });
+  }
+  if (onboardingCtx && Object.keys(onboardingCtx).length > 0 && evidence.length === 0) {
+    evidence.push({ label: "Знакомство", detail: "контекст сохранён", href: "/ai-chat" });
+  }
+
   return (
     <div>
       <OnboardingModal />
 
-      {/* Hero: AI-first greeting */}
-      <div className="rounded-2xl card p-6">
-        <p className="text-lg font-bold" style={{ color: "#1A2F2B" }}>
-          {hasData ? `${displayName}, вот ваша сводка` : `${displayName}, я ваш медицинский помощник`}
-        </p>
-        <p className="mt-1 text-sm" style={{ color: "#5A8F85" }}>
-          {hasData
-            ? "На основе ваших данных — состояние, лекарства, последние записи"
-            : onboardingCtx?.reason
-              ? `Вы рассказали: ${onboardingCtx.reason}. Начните добавлять данные — и я смогу помогать предметнее.`
-              : "Я уже знакомлюсь с вами. Начните с любого шага — данные, дневник или вопрос в чате."}
+      {/* ===== PROACTIVE AGENT HERO ===== */}
+      <div className="rounded-2xl p-6" style={{ backgroundColor: "#F4F8F7", border: "1px solid rgba(45,110,106,0.1)" }}>
+        {/* A. Agent opening */}
+        <p className="text-lg font-bold leading-snug" style={{ color: "#1A2F2B" }}>
+          {agentOpening}
         </p>
 
-        {/* AI status summary - brief snapshot with source links */}
-        {hasData && (
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-sm" style={{ color: "#3D6B62" }}>
-            {diary?.[0] && (
-              <Link href="/diary" className="transition hover:underline">
-                Самочувствие: <strong>{diary[0].wellbeing_score}/10</strong>
-              </Link>
-            )}
-            {activeMeds.length > 0 && (
-              <Link href="/medications" className="transition hover:underline">
-                Препаратов: <strong>{activeMeds.length}</strong>
-              </Link>
-            )}
-            {vitals?.[0] && (
-              <Link href="/vitals" className="transition hover:underline">
-                {vitalLabels[vitals[0].vital_type]}: <strong>{vitals[0].value} {vitals[0].unit}</strong>
-              </Link>
-            )}
-          </div>
-        )}
+        {/* B. Main observation */}
+        <p className="mt-2.5 text-[15px] leading-relaxed" style={{ color: "#2D5A54" }}>
+          {agentObservation}
+        </p>
 
-        {!hasData && (
-          <div className="mt-5 rounded-xl p-5" style={{ backgroundColor: "rgba(45,110,106,0.05)" }}>
-            <p className="text-[15px] leading-relaxed" style={{ color: "#2D5A54" }}>
-              Знакомство уже началось. Чем больше данных вы добавите — тем точнее я смогу помогать. Но торопиться не нужно: начните с того, что удобно.
+        {/* C. One next step */}
+        <Link
+          href={agentNextStep.href}
+          className="mt-5 flex items-center gap-3 rounded-xl px-4 py-3.5 transition hover:shadow-md active:scale-[0.99]"
+          style={{ backgroundColor: "#2D6E6A" }}
+        >
+          <span className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold" style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }}>
+            →
+          </span>
+          <span className="text-sm font-semibold text-white">
+            {agentNextStep.text}
+          </span>
+        </Link>
+
+        {/* D. Evidence block */}
+        {evidence.length > 0 && (
+          <div className="mt-4 pt-3" style={{ borderTop: "1px solid rgba(45,110,106,0.1)" }}>
+            <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "#8AA8A2" }}>
+              На чём основано
             </p>
-            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <Link href="/diary" className="rounded-xl px-4 py-3 text-sm font-semibold text-center transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
-                Записать самочувствие
-              </Link>
-              <Link href="/vitals" className="rounded-xl px-4 py-3 text-sm font-semibold text-center transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
-                Добавить показатель
-              </Link>
-              <Link href="/documents" className="rounded-xl px-4 py-3 text-sm font-semibold text-center transition hover:shadow-md" style={{ backgroundColor: "rgba(45,110,106,0.1)", color: "#2D6E6A" }}>
-                Загрузить документ
-              </Link>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+              {evidence.map((e) => (
+                <Link
+                  key={e.label}
+                  href={e.href}
+                  className="inline-flex items-center gap-1.5 text-xs transition hover:underline"
+                  style={{ color: "#3D6B62" }}
+                >
+                  <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#2D6E6A" }} />
+                  <span className="font-medium">{e.label}</span>
+                  <span style={{ color: "#8AA8A2" }}>{e.detail}</span>
+                </Link>
+              ))}
             </div>
-            <Link
-              href="/ai-chat"
-              className="mt-3 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition hover:shadow-md"
-              style={{ backgroundColor: "#2D6E6A" }}
-            >
-              Задать вопрос AI-помощнику
-            </Link>
           </div>
         )}
       </div>
 
-      {/* AI-generated health summary */}
-      {hasData && (
+      {/* AI-generated health summary — only for rich state */}
+      {dataState === "rich" && (
         <div className="mt-4">
           <AiSummary patientId={patientId} />
         </div>
-      )}
-
-      {/* Data freshness / coverage */}
-      <div className="mt-4">
-        <DataFreshness
-          layers={[
-            { label: "Дневник", href: "/diary", lastDate: diary?.[0]?.created_at ?? null },
-            { label: "Показатели", href: "/vitals", lastDate: vitals?.[0]?.measured_at ?? null },
-            { label: "Лекарства", href: "/medications", lastDate: lastIntake ?? null },
-            { label: "Документы", href: "/documents", lastDate: docs?.[0]?.created_at ?? null },
-          ]}
-        />
-      </div>
-
-      {/* Smart next step */}
-      {nextStep && (
-        <Link
-          href={nextStep.href}
-          className="mt-4 flex items-center gap-4 rounded-2xl card p-5 transition hover:shadow-md active:scale-[0.99]"
-        >
-          <span
-            className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full text-white text-sm font-bold"
-            style={{ backgroundColor: "#2D6E6A" }}
-          >
-            →
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold" style={{ color: "#1A2F2B" }}>
-              {nextStep.text}
-            </p>
-            <p className="mt-0.5 text-xs" style={{ color: "#5A8F85" }}>
-              {nextStep.sub}
-            </p>
-          </div>
-        </Link>
       )}
 
       {/* Что важно сегодня */}
@@ -351,14 +383,14 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {/* Quick actions — secondary, muted */}
+      <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 px-2">
         {QUICK_ACTIONS.map((a) => (
           <Link
             key={a.href}
             href={a.href}
-            className="rounded-xl card px-2 py-3 text-center text-[13px] leading-snug font-semibold transition hover:shadow-md"
-            style={{ color: "#2D6E6A" }}
+            className="text-xs font-medium transition hover:underline py-1"
+            style={{ color: "#8AA8A2" }}
           >
             {a.label}
           </Link>
