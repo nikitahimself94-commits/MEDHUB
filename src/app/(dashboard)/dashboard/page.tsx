@@ -97,74 +97,106 @@ export default async function DashboardPage() {
   const dataLayers = [hasDiary, hasVitals, hasDocs, activeMeds.length > 0].filter(Boolean).length;
   const dataState: "empty" | "partial" | "rich" = dataLayers === 0 ? "empty" : dataLayers <= 2 ? "partial" : "rich";
 
-  // --- Agent observation (1 main insight) ---
+  // --- Agent: opening + observation + next step ---
   let agentOpening = "";
   let agentObservation = "";
-  let agentNextStep: { text: string; href: string } = { text: "", href: "" };
+  let agentNextStep: { text: string; sub: string; href: string } = { text: "", sub: "", href: "" };
 
   if (dataState === "empty") {
-    agentOpening = `${displayName}, я готов начать работать с вами.`;
+    agentOpening = onboardingCtx
+      ? `${displayName}, я помню наш разговор.`
+      : `${displayName}, давайте начнём.`;
     if (onboardingCtx?.reason) {
-      agentObservation = `Вы рассказали: ${onboardingCtx.reason}. Мне нужна первая опора — любые данные о вашем состоянии, чтобы начать разбираться.`;
+      agentObservation = `Вы сказали: «${onboardingCtx.reason}». Чтобы я мог работать с этим предметно, мне нужна хотя бы одна точка — запись самочувствия, показатель или документ.`;
     } else if (onboardingCtx?.current_concern) {
-      agentObservation = `Вы упомянули: ${onboardingCtx.current_concern}. Запишите самочувствие или загрузите документ — и я смогу начать работать с этим.`;
+      agentObservation = `Вы упомянули: «${onboardingCtx.current_concern}». Одна запись — и я смогу начать отслеживать.`;
     } else {
-      agentObservation = "У меня пока нет данных о вашем состоянии. Дайте мне первую опору — дневник, показатель или документ — и я начну собирать картину.";
+      agentObservation = "Пока я вас не вижу — нет ни одной записи. Одна точка данных, и я начну собирать картину.";
     }
-    agentNextStep = { text: "Записать самочувствие", href: "/diary" };
+    agentNextStep = {
+      text: "Записать самочувствие",
+      sub: "Это самый быстрый способ дать мне первую опору",
+      href: "/diary",
+    };
   } else if (dataState === "partial") {
-    agentOpening = `${displayName}, я посмотрел ваши данные.`;
-    // Build observation from what we have
-    const parts: string[] = [];
-    if (diary?.[0]) {
+    agentOpening = `${displayName}, пока картина такая.`;
+    // What we see — as a meaningful sentence, not a list
+    if (diary?.[0] && !hasVitals) {
       const score = diary[0].wellbeing_score;
-      const scoreWord = score >= 7 ? "стабильное" : score >= 4 ? "среднее" : "ниже обычного";
-      parts.push(`последнее самочувствие ${scoreWord} (${score}/10)`);
+      agentObservation = `Я вижу самочувствие ${score}/10, но без измерений мне сложно понять, что за этим стоит. Одного показателя — давления или пульса — хватит, чтобы картина стала конкретнее.`;
+      agentNextStep = {
+        text: "Добавьте первый показатель",
+        sub: "Чтобы не гадать по ощущениям — нужна хотя бы одна цифра",
+        href: "/vitals",
+      };
+    } else if (hasVitals && !hasDiary) {
+      const v = vitals![0];
+      agentObservation = `Есть ${vitalLabels[v.vital_type] || v.vital_type} (${v.value} ${v.unit}), но без дневника я не знаю, как вы себя чувствуете. Показатели без контекста — только половина картины.`;
+      agentNextStep = {
+        text: "Запишите самочувствие",
+        sub: "Это свяжет цифры с реальным состоянием",
+        href: "/diary",
+      };
+    } else if (hasDiary && hasVitals && !hasDocs) {
+      const score = diary![0].wellbeing_score;
+      agentObservation = `Самочувствие ${score}/10, показатели поступают. Не хватает документов — анализов или заключений, чтобы я мог видеть не только текущий момент, но и историю.`;
+      agentNextStep = {
+        text: "Загрузите документ",
+        sub: "Старый анализ или выписка — и картина станет объёмнее",
+        href: "/documents",
+      };
+    } else {
+      // Other partial combos
+      const missing: string[] = [];
+      if (!hasDiary) missing.push("дневник");
+      if (!hasVitals) missing.push("показатели");
+      if (!hasDocs) missing.push("документы");
+      agentObservation = `Часть данных уже есть, но ${missing.join(" и ")} пока пусто. Каждый новый слой делает мои выводы точнее.`;
+      if (!hasDiary) agentNextStep = { text: "Запишите самочувствие", sub: "Это свяжет данные с реальным состоянием", href: "/diary" };
+      else if (!hasVitals) agentNextStep = { text: "Добавьте показатель", sub: "Конкретная цифра лучше, чем ощущение", href: "/vitals" };
+      else agentNextStep = { text: "Загрузите документ", sub: "Добавит историю к текущей картине", href: "/documents" };
     }
-    if (vitals?.[0]) {
-      parts.push(`${vitalLabels[vitals[0].vital_type] || vitals[0].vital_type}: ${vitals[0].value} ${vitals[0].unit}`);
-    }
-    if (activeMeds.length > 0) {
-      parts.push(`${activeMeds.length} активных препаратов`);
-    }
-    const seen = parts.length > 0 ? `Я вижу: ${parts.join(", ")}.` : "";
-    const missing: string[] = [];
-    if (!hasDiary) missing.push("дневника");
-    if (!hasVitals) missing.push("показателей");
-    if (!hasDocs) missing.push("документов");
-    const gap = missing.length > 0 ? ` Картина пока неполная — не хватает ${missing.join(" и ")}.` : "";
-    agentObservation = seen + gap;
-    // Next step: fill the biggest gap
-    if (!hasDiary) agentNextStep = { text: "Записать самочувствие", href: "/diary" };
-    else if (!hasVitals) agentNextStep = { text: "Добавить показатель", href: "/vitals" };
-    else if (!hasDocs) agentNextStep = { text: "Загрузить документ", href: "/documents" };
-    else agentNextStep = { text: "Подготовить сводку для врача", href: "/doctor-visit" };
   } else {
-    // rich
-    agentOpening = `${displayName}, вот что сейчас выглядит главным.`;
-    // Derive main insight
+    // rich — enough data for a real observation
+    agentOpening = `${displayName}, сейчас главное вот что.`;
     if (diary?.[0]) {
       const score = diary[0].wellbeing_score;
       const symptoms = diary[0].symptoms?.length ? diary[0].symptoms.slice(0, 2).join(", ") : null;
       if (score <= 4) {
-        agentObservation = `Самочувствие ${score}/10${symptoms ? ` (${symptoms})` : ""} — это ниже обычного. Стоит отслеживать динамику ближайшие дни.`;
+        agentObservation = symptoms
+          ? `Самочувствие ${score}/10 и ${symptoms} — это заметно ниже нормы. Стоит записывать состояние ближайшие дни, чтобы понять — это разовый провал или тренд.`
+          : `Самочувствие ${score}/10 — это ниже нормы. Если в ближайшие дни не станет лучше, имеет смысл показать сводку врачу.`;
+      } else if (score <= 6 && symptoms) {
+        agentObservation = `Самочувствие ${score}/10, при этом есть ${symptoms}. Пока это не критично, но стоит следить — если повторится, это уже паттерн.`;
       } else if (symptoms) {
-        agentObservation = `Самочувствие ${score}/10, но есть ${symptoms}. По остальным данным картина стабильная.`;
+        agentObservation = `В целом ${score}/10 — стабильно, но ${symptoms} пока сохраняется. Данные из других источников подтверждают: общая картина ровная.`;
       } else {
-        agentObservation = `Самочувствие ${score}/10, данные поступают регулярно. Картина стабильная.`;
+        agentObservation = `Самочувствие ${score}/10, данные поступают регулярно. Общая картина ровная — ничего, что требует срочного внимания.`;
       }
     } else {
-      agentObservation = "Данные поступают из нескольких источников. Картина складывается.";
+      agentObservation = "Данные есть из нескольких источников. Общая картина складывается — грубых отклонений не вижу.";
     }
     // Next step for rich state
     if (!hasPrep) {
-      agentNextStep = { text: "Подготовить сводку для врача", href: "/doctor-visit" };
+      agentNextStep = {
+        text: "Соберите сводку для врача",
+        sub: "Данных хватает — так будет проще показать главное на приёме",
+        href: "/doctor-visit",
+      };
     } else {
       const diaryToday = diary?.[0] && new Date(diary[0].created_at) >= getLocalDayStart();
       if (!diaryToday) {
-        agentNextStep = { text: "Записать сегодняшнее самочувствие", href: "/diary" };
+        agentNextStep = {
+          text: "Запишите сегодняшнее самочувствие",
+          sub: "Регулярность записей делает выводы точнее",
+          href: "/diary",
+        };
       } else {
-        agentNextStep = { text: "Задать вопрос по данным", href: "/ai-chat" };
+        agentNextStep = {
+          text: "Спросите меня о данных",
+          sub: "Могу разобрать тренды, сравнить показатели или подготовить вопросы врачу",
+          href: "/ai-chat",
+        };
       }
     }
   }
@@ -286,49 +318,43 @@ export default async function DashboardPage() {
       {/* ===== PROACTIVE AGENT HERO ===== */}
       <div className="rounded-2xl p-6" style={{ backgroundColor: "#F4F8F7", border: "1px solid rgba(45,110,106,0.1)" }}>
         {/* A. Agent opening */}
-        <p className="text-lg font-bold leading-snug" style={{ color: "#1A2F2B" }}>
+        <p className="text-[17px] font-bold leading-snug" style={{ color: "#1A2F2B" }}>
           {agentOpening}
         </p>
 
         {/* B. Main observation */}
-        <p className="mt-2.5 text-[15px] leading-relaxed" style={{ color: "#2D5A54" }}>
+        <p className="mt-3 text-sm leading-relaxed" style={{ color: "#2D5A54" }}>
           {agentObservation}
         </p>
 
-        {/* C. One next step */}
+        {/* C. One next step — action + reason */}
         <Link
           href={agentNextStep.href}
-          className="mt-5 flex items-center gap-3 rounded-xl px-4 py-3.5 transition hover:shadow-md active:scale-[0.99]"
+          className="mt-5 flex items-center gap-3 rounded-xl px-4 py-3 transition hover:shadow-md active:scale-[0.99]"
           style={{ backgroundColor: "#2D6E6A" }}
         >
-          <span className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold" style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "#fff" }}>
-            →
-          </span>
-          <span className="text-sm font-semibold text-white">
-            {agentNextStep.text}
-          </span>
+          <span className="shrink-0 text-white/60 text-sm font-bold">→</span>
+          <div className="min-w-0">
+            <span className="text-sm font-semibold text-white">{agentNextStep.text}</span>
+            {agentNextStep.sub && (
+              <span className="block text-xs text-white/70 mt-0.5">{agentNextStep.sub}</span>
+            )}
+          </div>
         </Link>
 
-        {/* D. Evidence block */}
+        {/* D. Evidence — light, tertiary */}
         {evidence.length > 0 && (
-          <div className="mt-4 pt-3" style={{ borderTop: "1px solid rgba(45,110,106,0.1)" }}>
-            <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "#8AA8A2" }}>
-              На чём основано
-            </p>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
-              {evidence.map((e) => (
-                <Link
-                  key={e.label}
-                  href={e.href}
-                  className="inline-flex items-center gap-1.5 text-xs transition hover:underline"
-                  style={{ color: "#3D6B62" }}
-                >
-                  <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#2D6E6A" }} />
-                  <span className="font-medium">{e.label}</span>
-                  <span style={{ color: "#8AA8A2" }}>{e.detail}</span>
-                </Link>
-              ))}
-            </div>
+          <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1">
+            {evidence.map((e) => (
+              <Link
+                key={e.label}
+                href={e.href}
+                className="text-[11px] transition hover:underline"
+                style={{ color: "#8AA8A2" }}
+              >
+                {e.label} · {e.detail}
+              </Link>
+            ))}
           </div>
         )}
       </div>
