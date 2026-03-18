@@ -48,51 +48,54 @@ export interface FinalStep {
 export type OnboardingStep = AgentStep | ChoiceStep | TextStep | AgentReactStep | FinalStep;
 
 // ─── PHASE 1: PRESENCE ───
+// Hook: "this will hold my picture even when I can't"
 
 const step_intro: AgentStep = {
   type: "agent",
   id: "intro",
   lines: [
-    "Я ваш медицинский помощник.",
-    "Буду держать в фокусе ваши данные, изменения и важные сигналы.",
-    "Вам не придётся каждый раз собирать картину заново.",
+    "Вам больше не нужно держать всё в голове.",
+    "Я запомню каждую деталь — анализы, показатели, жалобы, назначения.",
+    "Когда что-то изменится — я замечу.",
   ],
   button: "Продолжить",
   next: "reassure",
 };
 
+// Relief: "I won't burden you"
 const step_reassure: AgentStep = {
   type: "agent",
   id: "reassure",
   lines: [
-    "Давайте познакомимся.",
-    "Пара коротких вопросов — и я пойму, с чего вам лучше начать.",
+    "Мне нужно совсем немного, чтобы начать.",
+    "Три коротких вопроса. Без анкет, без форм, без лишнего.",
   ],
   button: "Хорошо",
   next: "entry_mode",
 };
 
 // ─── PHASE 2: SOFT ENTRY ───
+// Relevance: user identifies their situation, agent meets them there
 
 const step_entry_mode: ChoiceStep = {
   type: "choice",
   id: "entry_mode",
-  agentLine: "Что ближе к вашей ситуации?",
+  agentLine: "Какая задача сейчас перед вами?",
   options: [
     {
-      label: "Что-то беспокоит",
+      label: "Есть конкретная проблема",
       value: "concern",
-      sub: "Хочу разобраться и не терять из виду",
+      sub: "Что-то тревожит, и хочется наконец разобраться",
     },
     {
-      label: "Хочу следить системно",
+      label: "Хочу вести здоровье в порядке",
       value: "systematic",
-      sub: "Вести здоровье в одном месте",
+      sub: "Без срочной проблемы, но не хочу упускать важное",
     },
     {
-      label: "Помогаю близкому",
+      label: "Помогаю близкому человеку",
       value: "caregiver",
-      sub: "Хочу держать картину под контролем",
+      sub: "Хочу, чтобы ничего не терялось и не забывалось",
     },
   ],
   key: "entry_mode",
@@ -100,6 +103,7 @@ const step_entry_mode: ChoiceStep = {
 };
 
 // ─── PHASE 3: CLARIFICATION ───
+// Agent mirrors choice — makes a personal promise, not a product description
 
 const step_mirror: AgentReactStep = {
   type: "agent_react",
@@ -108,18 +112,18 @@ const step_mirror: AgentReactStep = {
     switch (answers.entry_mode) {
       case "concern":
         return [
-          "Помогу не потерять картину.",
-          "Чтобы разговор с врачом был предметным, а не по памяти.",
+          "Я не дам вам потерять нить.",
+          "Когда придёте к врачу — у вас будет чёткая картина, а не обрывки из памяти.",
         ];
       case "systematic":
         return [
-          "Буду собирать всё в одну линию.",
-          "Так проще видеть изменения, пока они мелкие.",
+          "Я замечу то, что легко пропустить в рутине.",
+          "Мелкие изменения, которые по отдельности ничего не значат — вместе могут значить многое.",
         ];
       case "caregiver":
         return [
-          "Помогу снять часть нагрузки.",
-          "Буду удерживать всю картину в одном месте — вам не придётся держать это в голове.",
+          "Вы не обязаны помнить всё.",
+          "Я буду держать картину — чтобы вы могли быть рядом с человеком, а не с бумагами.",
         ];
       default:
         return ["Понял. Давайте продолжим."];
@@ -132,11 +136,11 @@ const step_mirror: AgentReactStep = {
 const step_chronic: ChoiceStep = {
   type: "choice",
   id: "chronic",
-  agentLine: "Есть что-то длительное — хроническое заболевание, регулярное наблюдение, курс лечения?",
+  agentLine: "Есть что-то, с чем вы живёте давно?",
   options: [
-    { label: "Да, есть", value: "yes" },
+    { label: "Да", value: "yes" },
     { label: "Нет", value: "no" },
-    { label: "Не уверен", value: "unsure" },
+    { label: "Сложно сказать", value: "unsure" },
   ],
   key: "has_chronic",
   next: (value) => (value === "yes" ? "chronic_detail" : "has_documents"),
@@ -145,7 +149,7 @@ const step_chronic: ChoiceStep = {
 const step_chronic_detail: TextStep = {
   type: "text",
   id: "chronic_detail",
-  agentLine: "Коротко — что это? Не нужно подробностей, мне достаточно направления.",
+  agentLine: "Просто назовите — мне хватит одного слова.",
   placeholder: "Например: диабет, гипертония, наблюдение после операции",
   key: "chronic_detail",
   next: "has_documents",
@@ -155,11 +159,11 @@ const step_chronic_detail: TextStep = {
 const step_has_documents: ChoiceStep = {
   type: "choice",
   id: "has_documents",
-  agentLine: "Есть ли у вас уже документы — анализы, выписки, заключения? Неважно, свежие или старые.",
+  agentLine: "У вас есть какие-то документы — анализы, выписки, снимки?",
   options: [
-    { label: "Есть, могу загрузить", value: "yes" },
+    { label: "Да, есть", value: "yes" },
     { label: "Пока нет", value: "no" },
-    { label: "Потом разберусь", value: "later" },
+    { label: "Разберусь позже", value: "later" },
   ],
   key: "has_documents",
   next: "goal",
@@ -168,14 +172,15 @@ const step_has_documents: ChoiceStep = {
 const step_goal: TextStep = {
   type: "text",
   id: "goal",
-  agentLine: "Что для вас сейчас было бы самой полезной помощью?",
-  placeholder: "Например: подготовиться к приёму, разобрать анализы, просто не забывать записывать",
+  agentLine: "Чем я могу помочь прямо сейчас?",
+  placeholder: "Например: подготовиться к приёму, разобрать анализы, не забывать записывать",
   key: "primary_goal",
   next: "role_explain",
   optional: true,
 };
 
 // ─── PHASE 4: PERSONAL ROLE EXPLANATION ───
+// Clarity: agent commits, using user's own answers. Not product features — personal promises.
 
 const step_role_explain: AgentReactStep = {
   type: "agent_react",
@@ -184,21 +189,27 @@ const step_role_explain: AgentReactStep = {
     const lines: string[] = [];
 
     if (answers.entry_mode === "concern") {
-      lines.push("Я соберу всё в одну картину.");
-      lines.push("Записи, показатели, документы — чтобы было видно, как ситуация меняется со временем.");
+      lines.push("Теперь я слежу за вашей ситуацией.");
+      lines.push("Каждый анализ, каждая жалоба, каждый показатель — ничего не потеряется.");
     } else if (answers.entry_mode === "caregiver") {
-      lines.push("Я возьму на себя картину целиком.");
-      lines.push("Записи, показатели, документы, лекарства — всё в одном месте.");
+      lines.push("Теперь эта нагрузка не только на вас.");
+      lines.push("Лекарства, назначения, результаты, даты — я запомню всё.");
     } else {
-      lines.push("Я буду следить за изменениями.");
-      lines.push("Записи и показатели в одной линии — со временем покажу тренды.");
+      lines.push("Теперь у вас есть память, которая не подведёт.");
+      lines.push("Я зафиксирую каждое изменение и покажу, если что-то заслуживает внимания.");
     }
 
     if (answers.has_chronic === "yes" && answers.chronic_detail) {
-      lines.push(`${answers.chronic_detail} — уже часть контекста. Учту в каждом ответе.`);
+      lines.push(`${answers.chronic_detail} — я уже учёл. Это будет частью каждого моего ответа.`);
     }
 
-    lines.push("К врачу — не с пустыми руками. Важное — на виду.");
+    if (answers.entry_mode === "concern") {
+      lines.push("Когда придёт время разговора с врачом — всё главное будет собрано.");
+    } else if (answers.entry_mode === "caregiver") {
+      lines.push("Вам останется только быть рядом.");
+    } else {
+      lines.push("Не нужно помнить — я помню за вас.");
+    }
 
     return lines;
   },
@@ -207,6 +218,7 @@ const step_role_explain: AgentReactStep = {
 };
 
 // ─── PHASE 5: FIRST STEP + ENTRY ───
+// Inevitability: not "choose what to do" but "here is what we do now"
 
 const step_first_action: FinalStep = {
   type: "final",
@@ -214,18 +226,18 @@ const step_first_action: FinalStep = {
   getLines: (answers) => {
     if (answers.has_documents === "yes") {
       return [
-        "Вот с чего нам лучше начать.",
-        "Загрузите один документ — любой анализ или выписку. Это даст мне первую реальную опору, и дальше я смогу работать не вслепую.",
+        "Первый шаг — прямо сейчас.",
+        "Загрузите любой документ — анализ, выписку, что угодно. Мне не нужен идеальный файл. Нужна первая опора.",
       ];
     }
     return [
-      "Вот с чего нам лучше начать.",
-      "Запишите, как вы сейчас себя чувствуете. Одна запись — и у меня уже будет первая точка, от которой можно отталкиваться.",
+      "Первый шаг — прямо сейчас.",
+      "Просто запишите, как вы себя чувствуете. Одного предложения хватит — дальше я подхвачу.",
     ];
   },
   getAction: (answers) => {
     if (answers.has_documents === "yes") {
-      return { label: "Загрузить первый документ", href: "/documents" };
+      return { label: "Загрузить документ", href: "/documents" };
     }
     return { label: "Записать самочувствие", href: "/diary" };
   },
