@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 
-const STORAGE_KEY = "medhub:arrival_shown";
+// v2 key — distinct from v1 to avoid stale localStorage suppression
+const STORAGE_KEY = "medhub:arrival_v2";
 const DELAY_MS = 1800;
 
 /**
@@ -15,18 +16,22 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
   const [phase, setPhase] = useState<"hidden" | "entering" | "visible" | "leaving">("hidden");
 
   useEffect(() => {
+    // --- Diagnostic logging (remove after confirming overlay works) ---
+    let alreadyShown = false;
+    try {
+      alreadyShown = !!localStorage.getItem(STORAGE_KEY);
+    } catch { /* ignore */ }
+    console.log("[Arrival Overlay]", { show, alreadyShown, STORAGE_KEY });
+    // --- End diagnostic ---
+
     if (!show) return;
 
-    try {
-      if (localStorage.getItem(STORAGE_KEY)) return;
-    } catch {
-      return;
-    }
+    if (alreadyShown) return;
 
     const timer = setTimeout(() => {
+      console.log("[Arrival Overlay] Timer fired — showing overlay");
       setVisible(true);
       setPhase("entering");
-      // Enter animation completes after 500ms
       setTimeout(() => setPhase("visible"), 50);
     }, DELAY_MS);
 
@@ -89,7 +94,6 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Agent label */}
           <p
             className="font-semibold uppercase"
             style={{
@@ -101,7 +105,6 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
             Твой помощник
           </p>
 
-          {/* Headline */}
           <p
             className="font-bold leading-tight text-white"
             style={{
@@ -112,7 +115,6 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
             Ты внутри.
           </p>
 
-          {/* Body */}
           <p
             className="leading-relaxed"
             style={{
@@ -135,7 +137,6 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
             Не нужно разбираться во всём сразу. Я подскажу, с чего начать.
           </p>
 
-          {/* CTA */}
           <button
             type="button"
             onClick={dismiss}
@@ -152,7 +153,6 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
         </div>
       </div>
 
-      {/* Hero glow style — injected once, used after dismiss */}
       <style>{`
         @keyframes heroGlow {
           0% { box-shadow: 0 0 0 2px rgba(45,110,106,0.5), 0 0 24px rgba(45,110,106,0.15); }

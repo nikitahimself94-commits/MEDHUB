@@ -229,6 +229,8 @@ export default async function DashboardPage() {
   return (
     <div>
       {/* First arrival overlay — shows once after onboarding, with delay */}
+      {/* Debug: remove after confirming overlay works */}
+      <div data-debug-arrival={JSON.stringify({ isFirstArrival, onboardingDone, hasProductData, onboardingCompletedAt: !!onboardingCompletedAt, onboardingCtx: !!onboardingCtx })} className="hidden" />
       <FirstArrivalOverlay show={isFirstArrival} />
 
       {/* ===== PROACTIVE AGENT HERO ===== */}
