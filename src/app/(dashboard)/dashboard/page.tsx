@@ -35,7 +35,7 @@ export default async function DashboardPage() {
     { data: intakes },
     { data: visitPrep },
   ] = await Promise.all([
-    supabase.from("profiles").select("display_name, onboarding_context, onboarding_completed_at, companion_rotation_state").eq("patient_id", patientId).limit(1).maybeSingle(),
+    supabase.from("profiles").select("display_name, onboarding_context, onboarding_completed_at").eq("patient_id", patientId).limit(1).maybeSingle(),
     supabase.from("diary_entries").select("created_at, wellbeing_score, symptoms").eq("patient_id", patientId).order("created_at", { ascending: false }).limit(3),
     supabase.from("vitals").select("vital_type, value, unit, measured_at").eq("patient_id", patientId).order("measured_at", { ascending: false }).limit(5),
     supabase.from("medications").select("name, dosage, active").eq("patient_id", patientId).eq("active", true).limit(10),
@@ -44,6 +44,20 @@ export default async function DashboardPage() {
     supabase.from("medication_intakes").select("taken_at").eq("patient_id", patientId).order("taken_at", { ascending: false }).limit(1),
     supabase.from("doctor_visit_preps").select("summary, created_at").eq("patient_id", patientId).order("created_at", { ascending: false }).limit(1),
   ]);
+
+  // Rotation state: separate fail-safe query (column may not exist if migration 00027 not applied)
+  let rotationState: RotationState | null = null;
+  {
+    const { data: rotProfile } = await supabase
+      .from("profiles")
+      .select("companion_rotation_state")
+      .eq("patient_id", patientId)
+      .limit(1)
+      .maybeSingle();
+    if (rotProfile) {
+      rotationState = rotProfile.companion_rotation_state as RotationState | null;
+    }
+  }
 
   const usageCount = await getAiUsageCount(supabase as unknown as SupabaseClient, patientId);
 
@@ -96,9 +110,7 @@ export default async function DashboardPage() {
   const feed = recent.slice(0, 6);
 
   // --- Hero from MCO + per-user rotation ---
-  const rotation = new ServerRotation(
-    profile?.companion_rotation_state as RotationState | null
-  );
+  const rotation = new ServerRotation(rotationState);
   const dataState = heroDataState(mco);
   const baseOpening = heroOpening(mco, displayName, rotation);
   const paraphrased = await paraphraseHeroOpening(baseOpening, mco.greeting_context, mco.time_of_day);

@@ -57,19 +57,23 @@ export async function getOrRefreshMco(
   supabase: SupabaseClient,
   patientId: string,
 ): Promise<McoSnapshot> {
-  // 1. Try cached
-  const { data: row } = await supabase
-    .from("profiles")
-    .select("mco_snapshot, mco_updated_at")
-    .eq("patient_id", patientId)
-    .limit(1)
-    .maybeSingle();
+  // 1. Try cached (fail-safe: columns may not exist if migration 00026 not applied)
+  try {
+    const { data: row } = await supabase
+      .from("profiles")
+      .select("mco_snapshot, mco_updated_at")
+      .eq("patient_id", patientId)
+      .limit(1)
+      .maybeSingle();
 
-  if (row?.mco_snapshot && row.mco_updated_at) {
-    const age = Date.now() - new Date(row.mco_updated_at).getTime();
-    if (age < MCO_TTL_MS) {
-      return row.mco_snapshot as McoSnapshot;
+    if (row?.mco_snapshot && row.mco_updated_at) {
+      const age = Date.now() - new Date(row.mco_updated_at).getTime();
+      if (age < MCO_TTL_MS) {
+        return row.mco_snapshot as McoSnapshot;
+      }
     }
+  } catch {
+    // Columns don't exist yet — proceed to rebuild
   }
 
   // 2. Rebuild
