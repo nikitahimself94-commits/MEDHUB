@@ -233,6 +233,7 @@ export default async function DashboardPage() {
 
       {/* ===== PROACTIVE AGENT HERO ===== */}
       <div
+        data-hero
         className="rounded-2xl overflow-hidden"
         style={{ backgroundColor: "#1A2F2B" }}
       >
