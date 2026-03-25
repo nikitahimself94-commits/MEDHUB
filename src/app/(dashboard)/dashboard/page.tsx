@@ -80,8 +80,8 @@ export default async function DashboardPage() {
     return <OnboardingGate />;
   }
 
-  // First arrival: onboarding completed but no product data yet
-  const isFirstArrival = !!onboardingCompletedAt && !hasProductData;
+  // First arrival: onboarding done (any path) but no product data yet
+  const isFirstArrival = onboardingDone && !hasProductData;
 
   // MCO v1: build or use cached Medical Context Object
   const mco = await getOrRefreshMco(supabase as unknown as SupabaseClient, patientId);
