@@ -7,6 +7,7 @@ import { ServerRotation, type RotationState } from "@/lib/template-rotation";
 import { paraphraseHeroOpening } from "@/lib/haiku-paraphrase";
 import { AiUsageStatus } from "@/components/ai-usage-status";
 import { OnboardingGate } from "./onboarding-gate";
+import { FirstArrivalOverlay } from "./first-arrival-overlay";
 import { InlineAi } from "./inline-ai";
 import { AiSummary } from "./ai-summary";
 import { heroOpening, heroObservation, heroNextStep, heroEvidence, heroDataState } from "./hero-from-mco";
@@ -78,6 +79,9 @@ export default async function DashboardPage() {
   if (!onboardingDone) {
     return <OnboardingGate />;
   }
+
+  // First arrival: onboarding completed but no product data yet
+  const isFirstArrival = !!onboardingCompletedAt && !hasProductData;
 
   // MCO v1: build or use cached Medical Context Object
   const mco = await getOrRefreshMco(supabase as unknown as SupabaseClient, patientId);
@@ -224,7 +228,8 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      {/* Onboarding gate renders as fullscreen before this point — see early return above */}
+      {/* First arrival overlay — shows once after onboarding, with delay */}
+      <FirstArrivalOverlay show={isFirstArrival} />
 
       {/* ===== PROACTIVE AGENT HERO ===== */}
       <div
