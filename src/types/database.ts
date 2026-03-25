@@ -1,4 +1,4 @@
-// Supabase database types — manually synced with migrations 00001–00022
+// Supabase database types — manually synced with migrations 00001–00027
 // Data ownership: all product tables reference patient_id, not user_id
 // created_by (optional) tracks which auth user created a record (audit only, not access control)
 
@@ -17,6 +17,11 @@ export interface Profile {
   role: UserRole;
   display_name: string;
   created_at: string;
+  onboarding_context: Record<string, string> | null;       // migration 00023
+  onboarding_completed_at: string | null;                   // migration 00025
+  mco_snapshot: import("@/lib/mco").McoSnapshot | null;     // migration 00026
+  mco_updated_at: string | null;                            // migration 00026
+  companion_rotation_state: Record<string, number[]> | null; // migration 00027
 }
 
 export interface Allergy {

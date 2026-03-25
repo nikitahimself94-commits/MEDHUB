@@ -1,6 +1,6 @@
 import { getSessionPatient } from "@/lib/get-patient-id";
-import { ModuleHelp } from "@/components/module-help";
 import { SymptomsMatrix } from "./symptoms-matrix";
+import { symptomsStateBlock } from "./symptoms-companion";
 
 function getDaysList(daysBack: number): string[] {
   const result: string[] = [];
@@ -54,23 +54,33 @@ export default async function SymptomsMapPage() {
   const data14 = buildMatrix(entries, days14);
   const data30 = buildMatrix(entries, days30);
 
+  const state = symptomsStateBlock({
+    diaryEntriesLast30: entries.length,
+    uniqueSymptoms14: Object.keys(data14).length,
+    uniqueSymptoms30: Object.keys(data30).length,
+  });
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900">Карта симптомов</h2>
-      <div className="mt-3">
-        <ModuleHelp
-          title="Визуальная карта ваших симптомов"
-          description="Матрица показывает, какие симптомы и в какие дни вы отмечали в дневнике за последние 14 и 30 дней."
-          benefit="Наглядно видно, какие симптомы повторяются чаще и есть ли закономерности — это ценная информация для врача."
-        />
+
+      {/* Agent state block */}
+      <div
+        className="mt-3 rounded-2xl px-5 py-4"
+        style={{ backgroundColor: "rgba(45,110,106,0.05)" }}
+      >
+        <p className="text-[14px] font-medium leading-snug" style={{ color: "#1A2F2B" }}>
+          {state.line}
+        </p>
+        {state.supporting && (
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "#5A8F85" }}>
+            {state.supporting}
+          </p>
+        )}
       </div>
 
       <div className="mt-6">
-        {entries.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            Нет записей в дневнике за последние 30 дней
-          </p>
-        ) : (
+        {entries.length > 0 && (
           <SymptomsMatrix
             data14={data14}
             data30={data30}

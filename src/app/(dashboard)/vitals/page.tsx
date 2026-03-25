@@ -47,7 +47,7 @@ export default async function VitalsPage() {
       </div>
 
       <div className="mt-6">
-        <VitalForm />
+        <VitalForm entryCount={vitals.length} />
       </div>
 
       {chartVitals.length > 0 && (

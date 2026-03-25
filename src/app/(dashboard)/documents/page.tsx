@@ -5,6 +5,7 @@ import type { Document, DocumentParse, DocumentOpinion } from "@/types/database"
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DocumentForm } from "./document-form";
 import { DocumentList } from "./document-list";
+import { documentsCompanion } from "./documents-companion";
 
 export default async function DocumentsPage() {
   const { patientId, supabase } = await getSessionPatient();
@@ -45,61 +46,36 @@ export default async function DocumentsPage() {
   const parsedCount = documents.filter((d) => parseMap[d.id]).length;
   const opinionCount = documents.filter((d) => opinionMap[d.id]).length;
 
+  const companion = documentsCompanion({ totalDocs: documents.length, parsedCount, opinionCount });
+
   return (
     <div>
       <h2 className="text-2xl font-bold" style={{ color: "#1A2F2B" }}>Документы</h2>
-      <p className="mt-1 text-sm" style={{ color: "#5A8F85" }}>
-        {isEmpty
-          ? "Загрузите один документ — и AI начнёт работать"
-          : "Рабочая зона: загружайте, разбирайте, получайте выводы"}
-      </p>
       <div className="mt-3">
         <AiUsageStatus used={usageCount} />
       </div>
 
-      {/* Empty state: first-value promise */}
-      {isEmpty && (
-        <div className="mt-5 rounded-2xl card p-6">
-          <p className="text-[15px] font-semibold" style={{ color: "#1A2F2B" }}>
-            Начните с одного документа — этого достаточно
+      {/* Agent companion block */}
+      <div
+        className="mt-4 rounded-2xl px-5 py-4"
+        style={{ backgroundColor: "rgba(45,110,106,0.05)" }}
+      >
+        <p className="text-[14px] font-medium leading-snug" style={{ color: "#1A2F2B" }}>
+          {companion.line}
+        </p>
+        {companion.supporting && (
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "#5A8F85" }}>
+            {companion.supporting}
           </p>
-          <p className="mt-2 text-sm leading-relaxed" style={{ color: "#5A8F85" }}>
-            Старый анализ, выписка, заключение — подойдёт что угодно, даже фото на телефон.
-            Не нужно заполнять остальные разделы. Один документ запускает всю цепочку.
-          </p>
-
-          {/* Value chain */}
-          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <div className="rounded-xl p-3" style={{ backgroundColor: "rgba(45,110,106,0.05)" }}>
-              <p className="text-xs font-bold" style={{ color: "#2D6E6A" }}>1. Загрузка</p>
-              <p className="mt-0.5 text-xs" style={{ color: "#5A8F85" }}>
-                Добавьте документ как есть
-              </p>
-            </div>
-            <div className="rounded-xl p-3" style={{ backgroundColor: "rgba(45,110,106,0.05)" }}>
-              <p className="text-xs font-bold" style={{ color: "#2D6E6A" }}>2. AI-разбор</p>
-              <p className="mt-0.5 text-xs" style={{ color: "#5A8F85" }}>
-                Содержание простым языком
-              </p>
-            </div>
-            <div className="rounded-xl p-3" style={{ backgroundColor: "rgba(45,110,106,0.05)" }}>
-              <p className="text-xs font-bold" style={{ color: "#2D6E6A" }}>3. Второе мнение</p>
-              <p className="mt-0.5 text-xs" style={{ color: "#5A8F85" }}>
-                На что обратить внимание
-              </p>
-            </div>
+        )}
+        {!isEmpty && (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px]" style={{ color: "#8AA8A2" }}>
+            <span>Документов: {documents.length}</span>
+            <span>Разобрано: {parsedCount}</span>
+            <span>Второе мнение: {opinionCount}</span>
           </div>
-        </div>
-      )}
-
-      {/* Non-empty: progress overview */}
-      {!isEmpty && (
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm" style={{ color: "#3D6B62" }}>
-          <span>Документов: <strong>{documents.length}</strong></span>
-          <span>Разобрано: <strong>{parsedCount}</strong></span>
-          <span>Второе мнение: <strong>{opinionCount}</strong></span>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Upload form */}
       <div className="mt-5">

@@ -40,7 +40,7 @@ export default async function DiaryPage() {
       </div>
 
       <div className="mt-6">
-        <DiaryEntryForm />
+        <DiaryEntryForm entryCount={diaryEntries.length} />
       </div>
 
       <div className="mt-8 space-y-4">

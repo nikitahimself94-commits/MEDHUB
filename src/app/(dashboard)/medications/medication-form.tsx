@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { createMedication } from "./actions";
+import { medPostSaveReaction, type MedReaction } from "./medications-companion";
 
-export function MedicationForm() {
+export function MedicationForm({ medCount }: { medCount: number }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");
@@ -16,6 +17,7 @@ export function MedicationForm() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [reaction, setReaction] = useState<MedReaction | null>(null);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -39,6 +41,15 @@ export function MedicationForm() {
 
     try {
       await createMedication(formData);
+
+      const r = medPostSaveReaction({
+        name: name.trim(),
+        hasDosage: dosage.trim().length > 0,
+        hasSchedule: schedule.trim().length > 0,
+        isFirstMed: medCount === 0,
+      });
+      setReaction(r);
+
       setSaved(true);
       setName("");
       setDosage("");
@@ -47,7 +58,7 @@ export function MedicationForm() {
       setActive(true);
       setNotes("");
       setOpen(false);
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => { setSaved(false); setReaction(null); }, 5000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Ошибка сохранения");
     } finally {
@@ -61,15 +72,31 @@ export function MedicationForm() {
 
   if (!open) {
     return (
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => { setSaved(false); setError(""); setOpen(true); }}
-          className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
-        >
-          + Добавить препарат
-        </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
+      <div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => { setSaved(false); setReaction(null); setError(""); setOpen(true); }}
+            className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            + Добавить препарат
+          </button>
+        </div>
+        {saved && reaction && (
+          <div
+            className="mt-3 rounded-xl px-4 py-3"
+            style={{ backgroundColor: "rgba(45,110,106,0.06)" }}
+          >
+            <p className="text-[13px] font-medium" style={{ color: "#1A2F2B" }}>
+              {reaction.line}
+            </p>
+            {reaction.supporting && (
+              <p className="mt-0.5 text-[12px]" style={{ color: "#5A8F85" }}>
+                {reaction.supporting}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -171,7 +198,9 @@ export function MedicationForm() {
         >
           {saving ? "Сохранение..." : "Сохранить препарат"}
         </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
+        {saved && reaction && (
+          <span className="text-sm" style={{ color: "#2D6E6A" }}>{reaction.line}</span>
+        )}
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
     </form>

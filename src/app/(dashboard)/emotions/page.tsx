@@ -1,8 +1,8 @@
 import { getSessionPatient } from "@/lib/get-patient-id";
-import { ModuleHelp } from "@/components/module-help";
 import type { EmotionEntry } from "@/types/database";
 import { EmotionForm } from "./emotion-form";
 import { DeleteEmotionButton } from "./delete-emotion-button";
+import { emotionsStateBlock } from "./emotions-companion";
 
 const PARAM_LABELS: Record<string, string> = {
   anxiety: "Тревога",
@@ -24,34 +24,38 @@ export default async function EmotionsPage() {
 
   const entries: EmotionEntry[] = data ?? [];
 
+  const state = emotionsStateBlock(entries.length);
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900">Эмоции</h2>
-      <div className="mt-3">
-        <ModuleHelp
-          title="Дневник эмоционального состояния"
-          description="Оценивайте уровень тревоги, подавленности, спокойствия, усталости и надежды по шкале от 1 до 5."
-          benefit="Отслеживание эмоций помогает заметить связь между психологическим состоянием и физическим здоровьем."
-        />
+
+      {/* Agent state block */}
+      <div
+        className="mt-3 rounded-2xl px-5 py-4"
+        style={{ backgroundColor: "rgba(45,110,106,0.05)" }}
+      >
+        <p className="text-[14px] font-medium leading-snug" style={{ color: "#1A2F2B" }}>
+          {state.line}
+        </p>
+        {state.supporting && (
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "#5A8F85" }}>
+            {state.supporting}
+          </p>
+        )}
       </div>
 
       <div className="mt-6">
-        <EmotionForm />
+        <EmotionForm entryCount={entries.length} />
       </div>
 
-      <div className="mt-8">
-        {entries.length === 0 && (
-          <p className="text-sm text-gray-500">Записей пока нет</p>
-        )}
-
-        {entries.length > 0 && (
-          <div className="space-y-3">
-            {entries.map((entry) => (
-              <EmotionCard key={entry.id} entry={entry} />
-            ))}
-          </div>
-        )}
-      </div>
+      {entries.length > 0 && (
+        <div className="mt-8 space-y-3">
+          {entries.map((entry) => (
+            <EmotionCard key={entry.id} entry={entry} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

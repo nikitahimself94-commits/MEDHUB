@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { createDiaryEntry } from "./actions";
+import { diaryPostSaveReaction, type DiaryReaction } from "./diary-reaction";
 
-export function DiaryEntryForm() {
+export function DiaryEntryForm({ entryCount }: { entryCount: number }) {
   const [open, setOpen] = useState(false);
   const [wellbeing, setWellbeing] = useState(5);
   const [symptoms, setSymptoms] = useState("");
@@ -15,6 +16,7 @@ export function DiaryEntryForm() {
   const [tags, setTags] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [reaction, setReaction] = useState<DiaryReaction | null>(null);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -35,6 +37,18 @@ export function DiaryEntryForm() {
 
     try {
       await createDiaryEntry(formData);
+
+      // Compute agent reaction from just-submitted data before resetting form
+      const r = diaryPostSaveReaction({
+        wellbeing,
+        hasSymptoms: symptoms.trim().length > 0,
+        hasPain: painScore !== "" && Number(painScore) > 0,
+        hasSleep: sleepHours.trim().length > 0,
+        hasNotes: notes.trim().length > 0,
+        isFirstEntry: entryCount === 0,
+      });
+      setReaction(r);
+
       setSaved(true);
       setWellbeing(5);
       setSymptoms("");
@@ -45,7 +59,7 @@ export function DiaryEntryForm() {
       setNotes("");
       setTags("");
       setOpen(false);
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => { setSaved(false); setReaction(null); }, 5000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Ошибка сохранения");
     } finally {
@@ -59,15 +73,31 @@ export function DiaryEntryForm() {
 
   if (!open) {
     return (
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => { setSaved(false); setError(""); setOpen(true); }}
-          className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
-        >
-          + Добавить запись
-        </button>
-        {saved && <span className="text-sm text-teal-600">Записано</span>}
+      <div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => { setSaved(false); setReaction(null); setError(""); setOpen(true); }}
+            className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            + Добавить запись
+          </button>
+        </div>
+        {saved && reaction && (
+          <div
+            className="mt-3 rounded-xl px-4 py-3"
+            style={{ backgroundColor: "rgba(45,110,106,0.06)" }}
+          >
+            <p className="text-[13px] font-medium" style={{ color: "#1A2F2B" }}>
+              {reaction.line}
+            </p>
+            {reaction.supporting && (
+              <p className="mt-0.5 text-[12px]" style={{ color: "#5A8F85" }}>
+                {reaction.supporting}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -207,7 +237,9 @@ export function DiaryEntryForm() {
         >
           {saving ? "Сохранение..." : "Сохранить запись"}
         </button>
-        {saved && <span className="text-sm text-teal-600">Записано</span>}
+        {saved && reaction && (
+          <span className="text-sm" style={{ color: "#2D6E6A" }}>{reaction.line}</span>
+        )}
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
     </form>

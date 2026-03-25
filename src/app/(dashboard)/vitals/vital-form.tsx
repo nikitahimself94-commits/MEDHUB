@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createVital } from "./actions";
+import { vitalsPostSaveReaction, type VitalsReaction } from "./vitals-reaction";
 
 const VITAL_TYPES = [
   { value: "blood_pressure", label: "Давление", unit: "мм рт.ст.", placeholder: "120/80", notePlaceholder: "Сидя, стоя, после нагрузки..." },
@@ -12,7 +13,7 @@ const VITAL_TYPES = [
   { value: "glucose", label: "Глюкоза", unit: "ммоль/л", placeholder: "5.5", notePlaceholder: "Натощак, после еды, перед сном..." },
 ] as const;
 
-export function VitalForm() {
+export function VitalForm({ entryCount }: { entryCount: number }) {
   const [open, setOpen] = useState(false);
   const [vitalType, setVitalType] = useState<string>(VITAL_TYPES[0].value);
   const [value, setValue] = useState("");
@@ -20,6 +21,7 @@ export function VitalForm() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [reaction, setReaction] = useState<VitalsReaction | null>(null);
   const [error, setError] = useState("");
 
   const selected = VITAL_TYPES.find((t) => t.value === vitalType) ?? VITAL_TYPES[0];
@@ -45,12 +47,23 @@ export function VitalForm() {
 
     try {
       await createVital(formData);
+
+      // Compute agent reaction from just-submitted data before resetting
+      const submittedValue = value.trim();
+      const r = vitalsPostSaveReaction({
+        vitalType,
+        vitalLabel: selected.label,
+        value: submittedValue,
+        isFirstEntry: entryCount === 0,
+      });
+      setReaction(r);
+
       setSaved(true);
       setValue("");
       setMeasuredAt("");
       setNotes("");
       setOpen(false);
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => { setSaved(false); setReaction(null); }, 5000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Ошибка сохранения");
     } finally {
@@ -64,15 +77,31 @@ export function VitalForm() {
 
   if (!open) {
     return (
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => { setSaved(false); setError(""); setOpen(true); }}
-          className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
-        >
-          + Добавить показатель
-        </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
+      <div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => { setSaved(false); setReaction(null); setError(""); setOpen(true); }}
+            className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            + Добавить показатель
+          </button>
+        </div>
+        {saved && reaction && (
+          <div
+            className="mt-3 rounded-xl px-4 py-3"
+            style={{ backgroundColor: "rgba(45,110,106,0.06)" }}
+          >
+            <p className="text-[13px] font-medium" style={{ color: "#1A2F2B" }}>
+              {reaction.line}
+            </p>
+            {reaction.supporting && (
+              <p className="mt-0.5 text-[12px]" style={{ color: "#5A8F85" }}>
+                {reaction.supporting}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -145,7 +174,9 @@ export function VitalForm() {
         >
           {saving ? "Сохранение..." : "Сохранить"}
         </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
+        {saved && reaction && (
+          <span className="text-sm" style={{ color: "#2D6E6A" }}>{reaction.line}</span>
+        )}
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
     </form>

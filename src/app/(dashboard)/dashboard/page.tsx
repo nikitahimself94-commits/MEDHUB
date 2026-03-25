@@ -2,19 +2,18 @@ import Link from "next/link";
 import { getSessionPatient } from "@/lib/get-patient-id";
 import { getAiUsageCount } from "@/lib/check-ai-quota";
 import { getLocalDayStart } from "@/lib/local-day";
+import { getOrRefreshMco } from "@/lib/mco";
+import { ServerRotation, type RotationState } from "@/lib/template-rotation";
+import { paraphraseHeroOpening } from "@/lib/haiku-paraphrase";
 import { AiUsageStatus } from "@/components/ai-usage-status";
 import { OnboardingGate } from "./onboarding-gate";
 import { InlineAi } from "./inline-ai";
 import { AiSummary } from "./ai-summary";
+import { heroOpening, heroObservation, heroNextStep, heroEvidence, heroDataState } from "./hero-from-mco";
+import { moduleStatuses } from "./module-statuses";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const QUICK_ACTIONS = [
-  { href: "/diary", label: "Записать самочувствие" },
-  { href: "/medications", label: "Отметить приём" },
-  { href: "/vitals", label: "Добавить измерение" },
-  { href: "/ai-chat", label: "Спросить AI" },
-];
 
 interface RecentItem {
   type: string;
@@ -36,7 +35,7 @@ export default async function DashboardPage() {
     { data: intakes },
     { data: visitPrep },
   ] = await Promise.all([
-    supabase.from("profiles").select("display_name").eq("patient_id", patientId).limit(1).maybeSingle(),
+    supabase.from("profiles").select("display_name, onboarding_context, onboarding_completed_at, companion_rotation_state").eq("patient_id", patientId).limit(1).maybeSingle(),
     supabase.from("diary_entries").select("created_at, wellbeing_score, symptoms").eq("patient_id", patientId).order("created_at", { ascending: false }).limit(3),
     supabase.from("vitals").select("vital_type, value, unit, measured_at").eq("patient_id", patientId).order("measured_at", { ascending: false }).limit(5),
     supabase.from("medications").select("name, dosage, active").eq("patient_id", patientId).eq("active", true).limit(10),
@@ -49,33 +48,8 @@ export default async function DashboardPage() {
   const usageCount = await getAiUsageCount(supabase as unknown as SupabaseClient, patientId);
 
   const displayName = profile?.display_name?.trim() || "";
-
-  // Fetch onboarding context + completion status (columns may not exist yet)
-  let onboardingCtx: Record<string, string> | null = null;
-  let onboardingCompletedAt: string | null = null;
-  {
-    const { data: obProfile, error: obErr } = await supabase
-      .from("profiles")
-      .select("onboarding_context, onboarding_completed_at")
-      .eq("patient_id", patientId)
-      .limit(1)
-      .maybeSingle();
-    if (!obErr && obProfile) {
-      onboardingCtx = (obProfile.onboarding_context as Record<string, string>) ?? null;
-      onboardingCompletedAt = (obProfile.onboarding_completed_at as string) ?? null;
-    } else {
-      // Fallback: try without onboarding_completed_at (column may not exist)
-      const { data: obFallback, error: obErr2 } = await supabase
-        .from("profiles")
-        .select("onboarding_context")
-        .eq("patient_id", patientId)
-        .limit(1)
-        .maybeSingle();
-      if (!obErr2 && obFallback) {
-        onboardingCtx = (obFallback.onboarding_context as Record<string, string>) ?? null;
-      }
-    }
-  }
+  const onboardingCtx = (profile?.onboarding_context as Record<string, string>) ?? null;
+  const onboardingCompletedAt = (profile?.onboarding_completed_at as string) ?? null;
 
   // Gate logic: show fullscreen welcome flow ONLY for truly new users
   // Skip if: explicitly completed, OR has onboarding context, OR has any real product data
@@ -90,6 +64,10 @@ export default async function DashboardPage() {
   if (!onboardingDone) {
     return <OnboardingGate />;
   }
+
+  // MCO v1: build or use cached Medical Context Object
+  const mco = await getOrRefreshMco(supabase as unknown as SupabaseClient, patientId);
+
   const activeMeds = meds ?? [];
   const lastIntake = intakes?.[0]?.taken_at;
   const lastPrep = visitPrep?.[0] ?? null;
@@ -117,145 +95,34 @@ export default async function DashboardPage() {
   recent.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const feed = recent.slice(0, 6);
 
-  const hasDiary = (diary ?? []).length > 0;
-  const hasVitals = (vitals ?? []).length > 0;
-  const hasDocs = (docs ?? []).length > 0;
-  const hasPrep = !!lastPrep;
-  const dataLayers = [hasDiary, hasVitals, hasDocs, activeMeds.length > 0].filter(Boolean).length;
-  const dataState: "empty" | "partial" | "rich" = dataLayers === 0 ? "empty" : dataLayers <= 2 ? "partial" : "rich";
+  // --- Hero from MCO + per-user rotation ---
+  const rotation = new ServerRotation(
+    profile?.companion_rotation_state as RotationState | null
+  );
+  const dataState = heroDataState(mco);
+  const baseOpening = heroOpening(mco, displayName, rotation);
+  const paraphrased = await paraphraseHeroOpening(baseOpening, mco.greeting_context, mco.time_of_day);
+  const agentOpening = paraphrased ?? baseOpening;
+  const agentObservation = heroObservation(mco);
+  const agentNextStep = heroNextStep(mco);
+  const evidence = heroEvidence(mco);
 
-  // --- Agent: opening + observation + next step ---
-  let agentOpening = "";
-  let agentObservation = "";
-  let agentNextStep: { text: string; sub: string; href: string } = { text: "", sub: "", href: "" };
-
-  function agentLine(phrase: string): string {
-    return displayName ? `${displayName}, ${phrase}` : phrase.charAt(0).toUpperCase() + phrase.slice(1);
+  // Persist rotation state if changed
+  if (rotation.isDirty()) {
+    const { error: rotErr } = await supabase
+      .from("profiles")
+      .update({ companion_rotation_state: rotation.getState() })
+      .eq("patient_id", patientId);
+    if (rotErr) {
+      console.error("[Rotation] Failed to persist:", rotErr.message);
+    }
   }
 
-  if (dataState === "empty") {
-    // After onboarding gate: continue the conversation, not restart it
-    if (onboardingCtx?.entry_mode) {
-      // User just came from welcome flow — direct continuation
-      agentOpening = agentLine("я на месте.");
-      // Build observation that continues the onboarding thread
-      const mode = onboardingCtx.entry_mode;
-      if (onboardingCtx.chronic_detail) {
-        agentObservation = `Я учёл ${onboardingCtx.chronic_detail} — это уже часть вашего контекста. Теперь мне нужна первая запись, чтобы начать отслеживать.`;
-      } else if (mode === "concern") {
-        agentObservation = "Я готов разбираться. Первая запись самочувствия или документ — и у меня появится опора для наблюдения.";
-      } else if (mode === "caregiver") {
-        agentObservation = "Я буду держать картину. Добавьте первую запись — и мне будет от чего отталкиваться.";
-      } else {
-        agentObservation = "Хорошее начало. Первая точка данных — и я начну собирать вашу линию.";
-      }
-    } else if (onboardingCtx?.reason) {
-      // Legacy onboarding format
-      agentOpening = agentLine("я на месте.");
-      agentObservation = `Вы сказали: «${onboardingCtx.reason}». Первая запись — и я начну работать.`;
-    } else {
-      // No onboarding at all (existing user without context)
-      agentOpening = agentLine("давайте начнём.");
-      agentObservation = "Мне нужна первая точка данных — запись самочувствия, показатель или документ.";
-    }
-    // Pick first action based on onboarding answers
-    if (onboardingCtx?.has_documents === "yes") {
-      agentNextStep = {
-        text: "Загрузите первый документ",
-        sub: "Вы говорили, что документы есть — это лучший старт",
-        href: "/documents",
-      };
-    } else {
-      agentNextStep = {
-        text: "Записать самочувствие",
-        sub: "Самый быстрый способ дать мне первую опору",
-        href: "/diary",
-      };
-    }
-  } else if (dataState === "partial") {
-    agentOpening = agentLine("пока картина такая.");
-    // What we see — as a meaningful sentence, not a list
-    if (diary?.[0] && !hasVitals) {
-      const score = diary[0].wellbeing_score;
-      agentObservation = `Я вижу самочувствие ${score}/10, но без измерений мне сложно понять, что за этим стоит. Одного показателя — давления или пульса — хватит, чтобы картина стала конкретнее.`;
-      agentNextStep = {
-        text: "Добавьте первый показатель",
-        sub: "Чтобы не гадать по ощущениям — нужна хотя бы одна цифра",
-        href: "/vitals",
-      };
-    } else if (hasVitals && !hasDiary) {
-      const v = vitals![0];
-      agentObservation = `Есть ${vitalLabels[v.vital_type] || v.vital_type} (${v.value} ${v.unit}), но без дневника я не знаю, как вы себя чувствуете. Показатели без контекста — только половина картины.`;
-      agentNextStep = {
-        text: "Запишите самочувствие",
-        sub: "Это свяжет цифры с реальным состоянием",
-        href: "/diary",
-      };
-    } else if (hasDiary && hasVitals && !hasDocs) {
-      const score = diary![0].wellbeing_score;
-      agentObservation = `Самочувствие ${score}/10, показатели поступают. Не хватает документов — анализов или заключений, чтобы я мог видеть не только текущий момент, но и историю.`;
-      agentNextStep = {
-        text: "Загрузите документ",
-        sub: "Старый анализ или выписка — и картина станет объёмнее",
-        href: "/documents",
-      };
-    } else {
-      // Other partial combos
-      const missing: string[] = [];
-      if (!hasDiary) missing.push("дневник");
-      if (!hasVitals) missing.push("показатели");
-      if (!hasDocs) missing.push("документы");
-      agentObservation = `Часть данных уже есть, но ${missing.join(" и ")} пока пусто. Каждый новый слой делает мои выводы точнее.`;
-      if (!hasDiary) agentNextStep = { text: "Запишите самочувствие", sub: "Это свяжет данные с реальным состоянием", href: "/diary" };
-      else if (!hasVitals) agentNextStep = { text: "Добавьте показатель", sub: "Конкретная цифра лучше, чем ощущение", href: "/vitals" };
-      else agentNextStep = { text: "Загрузите документ", sub: "Добавит историю к текущей картине", href: "/documents" };
-    }
-  } else {
-    // rich — enough data for a real observation
-    agentOpening = agentLine("сейчас главное вот что.");
-    if (diary?.[0]) {
-      const score = diary[0].wellbeing_score;
-      const symptoms = diary[0].symptoms?.length ? diary[0].symptoms.slice(0, 2).join(", ") : null;
-      if (score <= 4) {
-        agentObservation = symptoms
-          ? `Самочувствие ${score}/10 и ${symptoms} — это заметно ниже нормы. Стоит записывать состояние ближайшие дни, чтобы понять — это разовый провал или тренд.`
-          : `Самочувствие ${score}/10 — это ниже нормы. Если в ближайшие дни не станет лучше, имеет смысл показать сводку врачу.`;
-      } else if (score <= 6 && symptoms) {
-        agentObservation = `Самочувствие ${score}/10, при этом есть ${symptoms}. Пока это не критично, но стоит следить — если повторится, это уже паттерн.`;
-      } else if (symptoms) {
-        agentObservation = `В целом ${score}/10 — стабильно, но ${symptoms} пока сохраняется. Данные из других источников подтверждают: общая картина ровная.`;
-      } else {
-        agentObservation = `Самочувствие ${score}/10, данные поступают регулярно. Общая картина ровная — ничего, что требует срочного внимания.`;
-      }
-    } else {
-      agentObservation = "Данные есть из нескольких источников. Общая картина складывается — грубых отклонений не вижу.";
-    }
-    // Next step for rich state
-    if (!hasPrep) {
-      agentNextStep = {
-        text: "Соберите сводку для врача",
-        sub: "Данных хватает — так будет проще показать главное на приёме",
-        href: "/doctor-visit",
-      };
-    } else {
-      const diaryToday = diary?.[0] && new Date(diary[0].created_at) >= getLocalDayStart();
-      if (!diaryToday) {
-        agentNextStep = {
-          text: "Запишите сегодняшнее самочувствие",
-          sub: "Регулярность записей делает выводы точнее",
-          href: "/diary",
-        };
-      } else {
-        agentNextStep = {
-          text: "Спросите меня о данных",
-          sub: "Могу разобрать тренды, сравнить показатели или подготовить вопросы врачу",
-          href: "/ai-chat",
-        };
-      }
-    }
-  }
+  // --- Module micro-statuses from MCO ---
+  const modules = moduleStatuses(mco);
 
   // --- "Что важно сегодня" signals ---
+  // Signals complement the hero CTA — skip items already covered by priority_action
   interface TodaySignal {
     text: string;
     sub?: string;
@@ -264,6 +131,8 @@ export default async function DashboardPage() {
   }
   const signals: TodaySignal[] = [];
   const todayStart = getLocalDayStart();
+  const heroCoversDiary = mco.priority_action === "add_diary" || mco.priority_action === "update_diary";
+  const heroCoversVitals = mco.priority_action === "add_vitals";
 
   // 1. Medications: intake status
   if (activeMeds.length > 0) {
@@ -284,31 +153,35 @@ export default async function DashboardPage() {
     }
   }
 
-  // 2. Diary: today entry?
-  const diaryToday = diary?.[0] && new Date(diary[0].created_at) >= todayStart;
-  if (!diaryToday) {
-    signals.push({
-      text: "Записать самочувствие",
-      sub: diary?.[0]
-        ? `Последняя запись: ${new Date(diary[0].created_at).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}`
-        : undefined,
-      href: "/diary",
-      tone: "action",
-    });
+  // 2. Diary: today entry? (skip if hero CTA already directs to diary)
+  if (!heroCoversDiary) {
+    const diaryToday = diary?.[0] && new Date(diary[0].created_at) >= todayStart;
+    if (!diaryToday) {
+      signals.push({
+        text: "Записать самочувствие",
+        sub: diary?.[0]
+          ? `Последняя запись: ${new Date(diary[0].created_at).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}`
+          : undefined,
+        href: "/diary",
+        tone: "action",
+      });
+    }
   }
 
-  // 3. Vitals: stale check (>3 days)
-  const lastVitalDate = vitals?.[0]?.measured_at ? new Date(vitals[0].measured_at) : null;
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-  if (!lastVitalDate || lastVitalDate < threeDaysAgo) {
-    signals.push({
-      text: "Добавить показатель",
-      sub: lastVitalDate
-        ? `Последний: ${lastVitalDate.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}`
-        : "Ещё нет измерений",
-      href: "/vitals",
-      tone: "hint",
-    });
+  // 3. Vitals: stale check (>3 days) (skip if hero CTA already directs to vitals)
+  if (!heroCoversVitals) {
+    const lastVitalDate = vitals?.[0]?.measured_at ? new Date(vitals[0].measured_at) : null;
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    if (!lastVitalDate || lastVitalDate < threeDaysAgo) {
+      signals.push({
+        text: "Добавить показатель",
+        sub: lastVitalDate
+          ? `Последний: ${lastVitalDate.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}`
+          : "Ещё нет измерений",
+        href: "/vitals",
+        tone: "hint",
+      });
+    }
   }
 
   // 4. Fresh visit prep
@@ -336,34 +209,6 @@ export default async function DashboardPage() {
 
   // Cap at 4 signals
   const todaySignals = signals.slice(0, 4);
-
-  // --- Evidence items for the hero ---
-  interface EvidenceItem { label: string; detail: string; href: string }
-  const evidence: EvidenceItem[] = [];
-  if (diary?.[0]) {
-    const daysAgo = Math.floor((Date.now() - new Date(diary[0].created_at).getTime()) / 86400000);
-    evidence.push({
-      label: "Дневник",
-      detail: daysAgo === 0 ? "сегодня" : daysAgo === 1 ? "вчера" : `${daysAgo} дн. назад`,
-      href: "/diary",
-    });
-  }
-  if (vitals?.[0]) {
-    evidence.push({
-      label: vitalLabels[vitals[0].vital_type] || "Показатель",
-      detail: `${vitals[0].value} ${vitals[0].unit}`,
-      href: "/vitals",
-    });
-  }
-  if (activeMeds.length > 0) {
-    evidence.push({ label: "Лекарства", detail: `${activeMeds.length} активных`, href: "/medications" });
-  }
-  if (docs?.[0]) {
-    evidence.push({ label: "Документы", detail: `${(docs ?? []).length} загружено`, href: "/documents" });
-  }
-  if (onboardingCtx && Object.keys(onboardingCtx).length > 0 && evidence.length === 0) {
-    evidence.push({ label: "Знакомство", detail: "контекст сохранён", href: "/ai-chat" });
-  }
 
   return (
     <div>
@@ -471,16 +316,29 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Quick actions — secondary, muted */}
-      <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 px-2">
-        {QUICK_ACTIONS.map((a) => (
+      {/* Module micro-statuses — agent-directed navigation */}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {modules.map((m) => (
           <Link
-            key={a.href}
-            href={a.href}
-            className="text-xs font-medium transition hover:underline py-1"
-            style={{ color: "#8AA8A2" }}
+            key={m.key}
+            href={m.href}
+            className="flex flex-col gap-0.5 rounded-xl px-3.5 py-3 transition hover:brightness-95 active:scale-[0.98]"
+            style={{
+              backgroundColor: m.isPrimary ? "rgba(45,110,106,0.08)" : "rgba(138,168,162,0.06)",
+            }}
           >
-            {a.label}
+            <span
+              className="text-[13px] font-semibold"
+              style={{ color: m.isPrimary ? "#1A2F2B" : "#3D6B62" }}
+            >
+              {m.label}
+            </span>
+            <span
+              className="text-[11px] leading-snug"
+              style={{ color: m.isPrimary ? "#2D6E6A" : "#8AA8A2" }}
+            >
+              {m.status}
+            </span>
           </Link>
         ))}
       </div>

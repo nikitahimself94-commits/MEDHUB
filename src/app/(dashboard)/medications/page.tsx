@@ -1,6 +1,5 @@
 import { getSessionPatient } from "@/lib/get-patient-id";
 import { getLocalDayStart } from "@/lib/local-day";
-import { ModuleHelp } from "@/components/module-help";
 import type { Medication } from "@/types/database";
 import { MedicationForm } from "./medication-form";
 import { IntakeButton } from "./intake-button";
@@ -9,6 +8,7 @@ import { UndoIntakeButton } from "./undo-intake-button";
 import { RecentIntakes } from "./recent-intakes";
 import { EditMedicationForm } from "./edit-medication-form";
 import { DeleteMedicationButton } from "./delete-medication-button";
+import { medicationsStateBlock } from "./medications-companion";
 
 interface RecentIntake {
   taken_at: string;
@@ -72,6 +72,14 @@ export default async function MedicationsPage() {
   const activeMeds = medications.filter((m) => m.active);
   const inactiveMeds = medications.filter((m) => !m.active);
 
+  // Count how many active meds have at least 1 intake today
+  const takenTodayCount = activeMeds.filter((m) => (intakeCounts[m.id] || 0) > 0).length;
+  const state = medicationsStateBlock({
+    activeCount: activeMeds.length,
+    inactiveCount: inactiveMeds.length,
+    takenTodayCount,
+  });
+
   function formatDate(d: string) {
     return new Date(d).toLocaleDateString("ru-RU");
   }
@@ -79,22 +87,27 @@ export default async function MedicationsPage() {
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900">Лекарства</h2>
-      <div className="mt-3">
-        <ModuleHelp
-          title="Управление лекарствами"
-          description="Ведите список назначенных препаратов, отмечайте приёмы и следите за активным курсу лечения."
-          benefit="Помогает не пропускать приёмы и видеть полную картину текущей терапии — для себя и для врача."
-        />
+
+      {/* Agent state block */}
+      <div
+        className="mt-3 rounded-2xl px-5 py-4"
+        style={{ backgroundColor: "rgba(45,110,106,0.05)" }}
+      >
+        <p className="text-[14px] font-medium leading-snug" style={{ color: "#1A2F2B" }}>
+          {state.line}
+        </p>
+        {state.supporting && (
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "#5A8F85" }}>
+            {state.supporting}
+          </p>
+        )}
       </div>
 
       <div className="mt-6">
-        <MedicationForm />
+        <MedicationForm medCount={medications.length} />
       </div>
 
       <div className="mt-8">
-        {medications.length === 0 && (
-          <p className="text-sm text-gray-500">Препаратов пока нет</p>
-        )}
 
         {activeMeds.length > 0 && (
           <div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createEmotionEntry } from "./actions";
+import { emotionPostSaveReaction, type EmotionReaction } from "./emotions-companion";
 
 const PARAMS = [
   { key: "anxiety", label: "Тревога" },
@@ -13,7 +14,7 @@ const PARAMS = [
 
 type Scores = Record<string, number>;
 
-export function EmotionForm() {
+export function EmotionForm({ entryCount }: { entryCount: number }) {
   const [open, setOpen] = useState(false);
   const [scores, setScores] = useState<Scores>(() =>
     Object.fromEntries(PARAMS.map((p) => [p.key, 3]))
@@ -21,6 +22,7 @@ export function EmotionForm() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [reaction, setReaction] = useState<EmotionReaction | null>(null);
   const [error, setError] = useState("");
 
   function setScore(key: string, val: number) {
@@ -41,11 +43,25 @@ export function EmotionForm() {
 
     try {
       await createEmotionEntry(formData);
+
+      const r = emotionPostSaveReaction({
+        scores: {
+          anxiety: scores.anxiety,
+          depression: scores.depression,
+          calmness: scores.calmness,
+          fatigue: scores.fatigue,
+          hope: scores.hope,
+        },
+        hasNotes: notes.trim().length > 0,
+        isFirstEntry: entryCount === 0,
+      });
+      setReaction(r);
+
       setSaved(true);
       setScores(Object.fromEntries(PARAMS.map((p) => [p.key, 3])));
       setNotes("");
       setOpen(false);
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => { setSaved(false); setReaction(null); }, 5000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Ошибка сохранения");
     } finally {
@@ -59,15 +75,31 @@ export function EmotionForm() {
 
   if (!open) {
     return (
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => { setSaved(false); setError(""); setOpen(true); }}
-          className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
-        >
-          + Записать эмоции
-        </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
+      <div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => { setSaved(false); setReaction(null); setError(""); setOpen(true); }}
+            className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            + Записать эмоции
+          </button>
+        </div>
+        {saved && reaction && (
+          <div
+            className="mt-3 rounded-xl px-4 py-3"
+            style={{ backgroundColor: "rgba(45,110,106,0.06)" }}
+          >
+            <p className="text-[13px] font-medium" style={{ color: "#1A2F2B" }}>
+              {reaction.line}
+            </p>
+            {reaction.supporting && (
+              <p className="mt-0.5 text-[12px]" style={{ color: "#5A8F85" }}>
+                {reaction.supporting}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -128,7 +160,9 @@ export function EmotionForm() {
         >
           {saving ? "Сохранение..." : "Сохранить"}
         </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
+        {saved && reaction && (
+          <span className="text-sm" style={{ color: "#2D6E6A" }}>{reaction.line}</span>
+        )}
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
     </form>
