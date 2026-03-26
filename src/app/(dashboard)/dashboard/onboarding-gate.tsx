@@ -145,14 +145,18 @@ export function OnboardingGate() {
     }
   }
 
-  async function handleFinish(href: string) {
+  async function handleFinish() {
     setSaving(true);
     try {
       await completeOnboarding(answers);
     } catch {
       // Don't block
     }
-    router.push(href);
+    // completeOnboarding calls revalidatePath("/dashboard") which triggers
+    // automatic RSC re-fetch. router.refresh() is a safety fallback.
+    // IMPORTANT: do NOT call router.push("/dashboard") here — it creates a
+    // competing navigation to the same URL, causing the overlay component
+    // to unmount/remount and reset its display timer.
     router.refresh();
   }
 
@@ -296,7 +300,7 @@ export function OnboardingGate() {
               {step.type === "final" && (
                 <button
                   type="button"
-                  onClick={() => handleFinish(step.getAction(answers).href)}
+                  onClick={() => handleFinish()}
                   disabled={saving}
                   className="w-full rounded-xl px-6 py-4 text-[15px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
                   style={{ backgroundColor: "#2D6E6A" }}
