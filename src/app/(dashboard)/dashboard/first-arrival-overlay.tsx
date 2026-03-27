@@ -6,16 +6,28 @@ import { useState, useEffect, useRef } from "react";
 const STORAGE_KEY = "medhub:arrival_v2";
 const DELAY_MS = 1800;
 
+// Phase order for >= comparisons
+const PHASES = [
+  "hidden",
+  "backdrop",
+  "card",
+  "label",
+  "headline",
+  "body",
+  "ready",
+  "leaving",
+] as const;
+type Phase = (typeof PHASES)[number];
+
 /**
  * First Arrival Overlay — agent arrival event after onboarding.
- * Presence-layer: staged cascade reveal, ambient glow, spring motion.
+ * Presence-layer: staged cascade reveal with perceptible rhythm.
+ * Each text group has its own phase with 400-600ms gaps.
  * After dismiss: hero highlight bridge into workspace.
  */
 export function FirstArrivalOverlay({ show }: { show: boolean }) {
   const [visible, setVisible] = useState(false);
-  const [phase, setPhase] = useState<
-    "hidden" | "backdrop" | "card" | "content" | "ready" | "leaving"
-  >("hidden");
+  const [phase, setPhase] = useState<Phase>("hidden");
   const mountId = useRef(0);
 
   useEffect(() => {
@@ -30,17 +42,81 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
     if (!show) return;
     if (alreadyShown) return;
 
-    const timer = setTimeout(() => {
-      if (mountId.current !== id) return;
-      setVisible(true);
-      setPhase("backdrop");
-      // Staged cascade
-      setTimeout(() => setPhase("card"), 400);
-      setTimeout(() => setPhase("content"), 900);
-      setTimeout(() => setPhase("ready"), 1600);
-    }, DELAY_MS);
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let rafId = 0;
+    let observer: IntersectionObserver | null = null;
 
-    return () => clearTimeout(timer);
+    function startCascade() {
+      if (cancelled || mountId.current !== id) return;
+      timers.push(
+        setTimeout(() => {
+          if (cancelled || mountId.current !== id) return;
+          setVisible(true);
+          setPhase("backdrop");
+          timers.push(setTimeout(() => setPhase("card"), 350));
+          timers.push(setTimeout(() => setPhase("label"), 800));
+          timers.push(setTimeout(() => setPhase("headline"), 1200));
+          timers.push(setTimeout(() => setPhase("body"), 1700));
+          timers.push(setTimeout(() => setPhase("ready"), 2300));
+        }, DELAY_MS),
+      );
+    }
+
+    // Wait for dashboard [data-hero] to be visible before starting delay.
+    // This guarantees the user sees the dashboard BEFORE the overlay.
+    // OnboardingGate does not contain [data-hero], so this also acts as
+    // a gate against starting the overlay while onboarding is still on screen.
+    function onHeroVisible() {
+      if (cancelled) return;
+      // Double-rAF ensures the browser has painted the dashboard
+      requestAnimationFrame(() => {
+        requestAnimationFrame(startCascade);
+      });
+    }
+
+    const hero = document.querySelector("[data-hero]");
+    if (hero) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0]?.isIntersecting) {
+            observer?.disconnect();
+            observer = null;
+            onHeroVisible();
+          }
+        },
+        { threshold: 0.1 },
+      );
+      observer.observe(hero);
+    } else {
+      // Hero not yet in DOM — poll until it appears (handles slow RSC)
+      const poll = () => {
+        if (cancelled) return;
+        const h = document.querySelector("[data-hero]");
+        if (h) {
+          onHeroVisible();
+        } else {
+          rafId = requestAnimationFrame(poll);
+        }
+      };
+      rafId = requestAnimationFrame(poll);
+    }
+
+    // Fallback: if hero never appears (edge case), start after 5s anyway
+    const fallback = setTimeout(() => {
+      if (!cancelled && mountId.current === id) {
+        observer?.disconnect();
+        startCascade();
+      }
+    }, 5000);
+    timers.push(fallback);
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+      observer?.disconnect();
+      timers.forEach(clearTimeout);
+    };
   }, [show]);
 
   function dismiss() {
@@ -64,10 +140,15 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
 
   if (!visible) return null;
 
-  const pastBackdrop = phase !== "backdrop";
-  const pastCard = phase === "content" || phase === "ready" || phase === "leaving";
-  const isReady = phase === "ready";
+  const idx = PHASES.indexOf(phase);
+  const pastBackdrop = idx >= 2; // card+
+  const pastLabel = idx >= 3; // label+
+  const pastHeadline = idx >= 4; // headline+
+  const pastBody = idx >= 5; // body+
+  const isReady = idx >= 6; // ready+
   const isLeaving = phase === "leaving";
+
+  const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
 
   return (
     <>
@@ -75,7 +156,7 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
       <div
         className="fixed inset-0 z-[90]"
         style={{
-          transition: "opacity 700ms cubic-bezier(0.16, 1, 0.3, 1)",
+          transition: `opacity 700ms ${EASE}`,
           opacity: isLeaving ? 0 : phase !== "hidden" ? 1 : 0,
         }}
         onClick={dismiss}
@@ -112,11 +193,11 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
                 : "scale(0.92) translateY(48px)",
             transition: isLeaving
               ? "opacity 500ms ease-in, transform 500ms ease-in"
-              : "opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 700ms ease-out",
+              : `opacity 700ms ${EASE}, transform 700ms ${EASE}, box-shadow 700ms ease-out`,
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Ambient glow ring behind card */}
+          {/* Ambient glow ring */}
           <div
             className="absolute -inset-px rounded-2xl pointer-events-none"
             style={{
@@ -127,71 +208,65 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
             }}
           />
 
-          {/* Label */}
+          {/* Label — phase: label */}
           <p
             className="font-semibold uppercase"
             style={{
               fontSize: "clamp(10px, 1.2vw, 12px)",
               letterSpacing: "0.15em",
               color: "#4A8A82",
-              opacity: pastCard ? 1 : 0,
-              transform: pastCard ? "translateY(0)" : "translateY(8px)",
-              transition:
-                "opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)",
+              opacity: pastLabel ? 1 : 0,
+              transform: pastLabel ? "translateY(0)" : "translateY(8px)",
+              transition: `opacity 500ms ${EASE}, transform 500ms ${EASE}`,
             }}
           >
             Твой помощник
           </p>
 
-          {/* Headline */}
+          {/* Headline — phase: headline */}
           <p
             className="font-bold leading-tight text-white"
             style={{
               marginTop: "clamp(14px, 2vw, 22px)",
               fontSize: "clamp(24px, 3.2vw, 36px)",
-              opacity: pastCard ? 1 : 0,
-              transform: pastCard ? "translateY(0)" : "translateY(12px)",
-              transition:
-                "opacity 600ms cubic-bezier(0.16, 1, 0.3, 1) 120ms, transform 600ms cubic-bezier(0.16, 1, 0.3, 1) 120ms",
+              opacity: pastHeadline ? 1 : 0,
+              transform: pastHeadline ? "translateY(0)" : "translateY(12px)",
+              transition: `opacity 600ms ${EASE}, transform 600ms ${EASE}`,
             }}
           >
             Ты внутри.
           </p>
 
-          {/* Body — first paragraph */}
+          {/* Body — phase: body (both paragraphs as one semantic unit) */}
           <p
             className="leading-relaxed"
             style={{
               marginTop: "clamp(12px, 1.5vw, 18px)",
               fontSize: "clamp(14px, 1.6vw, 17px)",
               color: "#A0C4BE",
-              opacity: pastCard ? 1 : 0,
-              transform: pastCard ? "translateY(0)" : "translateY(10px)",
-              transition:
-                "opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 280ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 280ms",
+              opacity: pastBody ? 1 : 0,
+              transform: pastBody ? "translateY(0)" : "translateY(10px)",
+              transition: `opacity 500ms ${EASE}, transform 500ms ${EASE}`,
             }}
           >
             Здесь дневник, показатели, документы, лекарства —
             всё, что нужно для твоей картины здоровья.
           </p>
-
-          {/* Body — second paragraph */}
           <p
             className="leading-relaxed"
             style={{
               marginTop: "clamp(6px, 1vw, 10px)",
               fontSize: "clamp(14px, 1.6vw, 17px)",
               color: "#A0C4BE",
-              opacity: pastCard ? 1 : 0,
-              transform: pastCard ? "translateY(0)" : "translateY(10px)",
-              transition:
-                "opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 420ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 420ms",
+              opacity: pastBody ? 1 : 0,
+              transform: pastBody ? "translateY(0)" : "translateY(10px)",
+              transition: `opacity 500ms ${EASE} 120ms, transform 500ms ${EASE} 120ms`,
             }}
           >
             Не нужно разбираться во всём сразу. Я подскажу, с чего начать.
           </p>
 
-          {/* CTA button */}
+          {/* CTA — phase: ready */}
           <button
             type="button"
             onClick={dismiss}
@@ -204,8 +279,7 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
               opacity: isReady || isLeaving ? 1 : 0,
               transform:
                 isReady || isLeaving ? "translateY(0)" : "translateY(12px)",
-              transition:
-                "opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: `opacity 500ms ${EASE}, transform 500ms ${EASE}`,
               boxShadow: isReady
                 ? "0 0 24px rgba(45,110,106,0.25), 0 4px 16px rgba(45,110,106,0.2)"
                 : "none",
