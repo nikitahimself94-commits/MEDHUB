@@ -301,6 +301,18 @@ async function buildMcoSnapshot(
   // --- priority_action ---
   const priority_action = resolvePriorityAction(data_completeness, days_absent);
 
+  // --- recent_patterns (deterministic, max 3) ---
+  const recent_patterns = deriveRecentPatterns(data_completeness, days_absent, medsCount ?? 0);
+
+  // --- open_questions (deterministic gaps, max 3) ---
+  const open_questions = deriveOpenQuestions(data_completeness, days_absent);
+
+  // --- pending_nudges (deterministic actionable nudges, max 3) ---
+  const pending_nudges = derivePendingNudges(data_completeness, days_absent, medsCount ?? 0);
+
+  // --- correlations (structural data-layer overlaps, max 3) ---
+  const correlations = deriveCorrelations(data_completeness, medsCount ?? 0);
+
   return {
     entry_mode,
     current_focus,
@@ -313,10 +325,10 @@ async function buildMcoSnapshot(
     updated_at: now.toISOString(),
     // v2 fields
     name: profile?.display_name ?? "",
-    recent_patterns: [],
-    open_questions: [],
-    pending_nudges: [],
-    correlations: [],
+    recent_patterns,
+    open_questions,
+    pending_nudges,
+    correlations,
     last_used_templates: recentTemplates,
   };
 }
@@ -324,6 +336,85 @@ async function buildMcoSnapshot(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Derive up to 3 factual patterns from diary/vitals/meds/docs only. */
+function deriveRecentPatterns(
+  c: McoDataCompleteness,
+  daysAbsent: number,
+  activeMedsCount: number,
+): string[] {
+  const out: string[] = [];
+  if (c.diary > 0) out.push("Есть записи в дневнике");
+  if (c.vitals > 0) out.push("Есть данные показателей");
+  if (activeMedsCount > 0) out.push("Есть активные лекарства");
+  if (out.length < 3 && c.documents > 0) out.push("Документы уже загружены");
+  const hasAnyData = c.diary > 0 || c.vitals > 0 || c.documents > 0 || activeMedsCount > 0;
+  if (out.length < 3 && hasAnyData && daysAbsent >= 3 && daysAbsent !== -1) {
+    out.push("Данные вносятся нерегулярно");
+  }
+  return out.slice(0, 3);
+}
+
+/** Derive up to 3 concrete data gaps from diary/vitals/docs only. */
+function deriveOpenQuestions(
+  c: McoDataCompleteness,
+  daysAbsent: number,
+): string[] {
+  const hasAnyData = c.diary > 0 || c.vitals > 0 || c.documents > 0;
+  const out: string[] = [];
+  if (c.diary === 0) out.push("Дневник пока пустой");
+  if (c.vitals === 0) out.push("Нет ни одного показателя");
+  if (c.documents === 0) out.push("Пока нет ни одного документа");
+  if (out.length < 3 && hasAnyData && daysAbsent >= 7) {
+    out.push("Давно не было новых записей");
+  }
+  return out.slice(0, 3);
+}
+
+/** Derive up to 3 actionable nudges from diary/vitals/docs/meds only. */
+function derivePendingNudges(
+  c: McoDataCompleteness,
+  daysAbsent: number,
+  activeMedsCount: number,
+): string[] {
+  const hasAnyData = c.diary > 0 || c.vitals > 0 || c.documents > 0;
+  const out: string[] = [];
+  if (c.diary === 0) out.push("Добавь первую запись в дневник");
+  if (c.vitals === 0) out.push("Добавь первый показатель");
+  if (out.length < 3 && c.documents === 0) out.push("Загрузи первый документ");
+  if (out.length < 3 && hasAnyData && daysAbsent >= 7) {
+    out.push("Обнови данные — давно не было записей");
+  }
+  if (out.length < 3 && activeMedsCount > 0 && daysAbsent >= 7) {
+    out.push("Проверь, актуальны ли лекарства");
+  }
+  return out.slice(0, 3);
+}
+
+/** Derive up to 3 structural data-layer correlations. Only emitted when both sides have data. */
+function deriveCorrelations(
+  c: McoDataCompleteness,
+  activeMedsCount: number,
+): McoCorrelation[] {
+  const hasDiary = c.diary > 0;
+  const hasVitals = c.vitals > 0;
+  const hasDocs = c.documents > 0;
+  const hasMeds = activeMedsCount > 0;
+
+  const candidates: McoCorrelation[] = [];
+  if (hasDiary && hasVitals)
+    candidates.push({ from: "diary", to: "vitals", description: "Есть и записи самочувствия, и показатели" });
+  if (hasDocs && hasVitals)
+    candidates.push({ from: "documents", to: "vitals", description: "Есть документы и данные показателей" });
+  if (hasMeds && hasDiary)
+    candidates.push({ from: "medications", to: "diary", description: "Есть лекарства и записи самочувствия" });
+  if (hasMeds && hasVitals)
+    candidates.push({ from: "medications", to: "vitals", description: "Есть лекарства и данные показателей" });
+  if (hasDocs && hasMeds)
+    candidates.push({ from: "documents", to: "medications", description: "Есть документы и лекарства" });
+
+  return candidates.slice(0, 3);
+}
 
 /** Returns value/cap clamped to [0, 1], rounded to 2 decimals */
 function cappedScore(count: number, cap: number): number {
