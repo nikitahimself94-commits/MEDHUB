@@ -24,22 +24,6 @@ const config: Config = {
         "text-primary": "var(--text-primary)",
         "text-muted": "var(--text-muted)",
         border: "var(--border)",
-
-        /* Legacy brand scale — kept for backward compatibility with
-           existing .tsx inline styles until Module Color Sweep (Chunk 4).
-           Will be removed after all components migrate to semantic tokens. */
-        brand: {
-          50: "#EDF2F1",
-          100: "#D4E0DE",
-          200: "#C8D5D2",
-          300: "#8AA8A2",
-          400: "#5A8F85",
-          500: "#3A7A74",
-          600: "#2D6E6A",
-          700: "#245B57",
-          800: "#1E4A47",
-          900: "#1A2F2B",
-        },
       },
       boxShadow: {
         glow: "var(--glow)",
