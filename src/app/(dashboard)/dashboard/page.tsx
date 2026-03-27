@@ -148,6 +148,26 @@ export default async function DashboardPage() {
     },
   ];
 
+  // --- Correlation relation cues ---
+  const corKeyToNode: Record<string, string> = {
+    diary: "wellbeing", emotions: "wellbeing",
+    vitals: "vitals", documents: "documents",
+    medications: "medications", symptoms: "symptoms",
+  };
+  const relatedNodes = new Set<string>();
+  for (const cor of mco.correlations.slice(0, 2)) {
+    const fromNode = corKeyToNode[cor.from];
+    const toNode = corKeyToNode[cor.to];
+    if (fromNode) relatedNodes.add(fromNode);
+    if (toNode) relatedNodes.add(toNode);
+  }
+  const RELATION_GLOW = "0 0 32px rgba(45,212,191,0.12)";
+  function nodeGlow(baseGlow: string, isRelated: boolean): string {
+    if (!isRelated) return baseGlow;
+    if (baseGlow === "none") return RELATION_GLOW;
+    return `${baseGlow}, ${RELATION_GLOW}`;
+  }
+
   const stateStyles: Record<MapNode["state"], { bg: string; border: string; glow: string; icon: string; label: string; status: string }> = {
     empty: {
       bg: "rgba(255,255,255,0.02)",
@@ -214,6 +234,18 @@ export default async function DashboardPage() {
             {agentObservation}
           </p>
 
+          {mco.open_questions.length > 0 && (
+            <p className="mt-2 text-[12px]" style={{ color: "var(--text-muted)", opacity: 0.65 }}>
+              <span className="font-medium">Открытый вопрос:</span> {mco.open_questions[0]}
+            </p>
+          )}
+
+          {mco.recent_patterns.length > 0 && (
+            <p className="mt-2 text-[12px]" style={{ color: "var(--accent)", opacity: 0.75 }}>
+              <span className="font-medium">Что уже вижу:</span> {mco.recent_patterns[0]}
+            </p>
+          )}
+
           {/* Evidence tags */}
           {evidence.length > 0 && (
             <div className="mt-5 flex flex-wrap gap-2">
@@ -236,6 +268,40 @@ export default async function DashboardPage() {
         </div>
       </section>
 
+      {/* ===== CORRELATIONS STRIP — agent signal ===== */}
+      {mco.correlations.length > 0 && (() => {
+        const layerLabel: Record<string, string> = {
+          diary: "Дневник", vitals: "Показатели", documents: "Документы",
+          medications: "Лекарства", emotions: "Эмоции", symptoms: "Симптомы",
+        };
+        return (
+          <div className="px-5 sm:px-8 pt-3 pb-1 flex flex-col gap-2">
+            {mco.correlations.slice(0, 2).map((cor) => (
+              <div key={`${cor.from}-${cor.to}`} className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    style={{ backgroundColor: "rgba(45,212,191,0.10)", color: "var(--accent)" }}
+                  >
+                    {layerLabel[cor.from] ?? cor.from}
+                  </span>
+                  <span className="text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>·</span>
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    style={{ backgroundColor: "rgba(45,212,191,0.10)", color: "var(--accent)" }}
+                  >
+                    {layerLabel[cor.to] ?? cor.to}
+                  </span>
+                </div>
+                <p className="text-[11px] sm:text-[12px] leading-snug" style={{ color: "var(--text-muted)" }}>
+                  {cor.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       {/* ===== HEALTH MAP — node composition ===== */}
       <div className="px-4 sm:px-6 pt-5 sm:pt-6">
         <div
@@ -249,13 +315,15 @@ export default async function DashboardPage() {
           {(() => {
             const wb = nodes[0];
             const ws = stateStyles[wb.state];
+            const isRelated = relatedNodes.has(wb.key);
             return (
               <Link
                 key={wb.key}
                 href={wb.href}
-                className="col-span-2 flex items-center gap-4 rounded-2xl px-5 py-5 transition-all hover:brightness-110 active:scale-[0.98]"
-                style={{ backgroundColor: ws.bg, border: ws.border, boxShadow: ws.glow }}
+                className="relative col-span-2 flex items-center gap-4 rounded-2xl px-5 py-5 transition-all hover:brightness-110 active:scale-[0.98]"
+                style={{ backgroundColor: ws.bg, border: ws.border, boxShadow: nodeGlow(ws.glow, isRelated) }}
               >
+                {isRelated && <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--accent)", opacity: 0.7 }} />}
                 <span className="text-3xl" style={{ color: ws.icon }}>{wb.icon}</span>
                 <div>
                   <span className="text-[15px] font-bold" style={{ color: ws.label }}>{wb.label}</span>
@@ -267,13 +335,15 @@ export default async function DashboardPage() {
           {(() => {
             const nd = nodes[1];
             const ns = stateStyles[nd.state];
+            const isRelated = relatedNodes.has(nd.key);
             return (
               <Link
                 key={nd.key}
                 href={nd.href}
-                className="flex flex-col items-center justify-center text-center rounded-2xl px-2 py-4 transition-all hover:brightness-110 active:scale-[0.97]"
-                style={{ backgroundColor: ns.bg, border: ns.border, boxShadow: ns.glow }}
+                className="relative flex flex-col items-center justify-center text-center rounded-2xl px-2 py-4 transition-all hover:brightness-110 active:scale-[0.97]"
+                style={{ backgroundColor: ns.bg, border: ns.border, boxShadow: nodeGlow(ns.glow, isRelated) }}
               >
+                {isRelated && <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--accent)", opacity: 0.7 }} />}
                 <span className="text-2xl" style={{ color: ns.icon }}>{nd.icon}</span>
                 <span className="mt-1.5 text-[12px] font-semibold" style={{ color: ns.label }}>{nd.label}</span>
                 <span className="mt-0.5 text-[10px]" style={{ color: ns.status, opacity: nd.state === "empty" ? 0.6 : 1 }}>{nd.status}</span>
@@ -284,13 +354,15 @@ export default async function DashboardPage() {
           {/* Row 2: Документы + Лекарства + Симптомы (equal) */}
           {nodes.slice(2, 5).map((node) => {
             const s = stateStyles[node.state];
+            const isRelated = relatedNodes.has(node.key);
             return (
               <Link
                 key={node.key}
                 href={node.href}
-                className="flex flex-col items-center justify-center text-center rounded-2xl px-2 py-4 transition-all hover:brightness-110 active:scale-[0.97]"
-                style={{ backgroundColor: s.bg, border: s.border, boxShadow: s.glow }}
+                className="relative flex flex-col items-center justify-center text-center rounded-2xl px-2 py-4 transition-all hover:brightness-110 active:scale-[0.97]"
+                style={{ backgroundColor: s.bg, border: s.border, boxShadow: nodeGlow(s.glow, isRelated) }}
               >
+                {isRelated && <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--accent)", opacity: 0.7 }} />}
                 <span className="text-xl" style={{ color: s.icon }}>{node.icon}</span>
                 <span className="mt-1.5 text-[12px] font-semibold leading-tight" style={{ color: s.label }}>{node.label}</span>
                 <span className="mt-0.5 text-[10px]" style={{ color: s.status, opacity: node.state === "empty" ? 0.6 : 1 }}>{node.status}</span>
@@ -339,6 +411,11 @@ export default async function DashboardPage() {
             <p className="mt-0.5 text-[12px] sm:text-[13px]" style={{ color: "var(--text-muted)" }}>
               {agentNextStep.sub}
             </p>
+            {mco.pending_nudges.length > 1 && (
+              <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
+                {mco.pending_nudges[1]}
+              </p>
+            )}
           </div>
           <span className="shrink-0 text-sm font-medium" style={{ color: "var(--accent)" }}>→</span>
         </Link>
