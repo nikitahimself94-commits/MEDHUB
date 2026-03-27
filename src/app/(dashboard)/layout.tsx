@@ -79,7 +79,7 @@ export default async function DashboardLayout({
           </div>
         </div>
       </header>
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 sm:py-6 pb-24">
+      <div className="mx-auto max-w-3xl lg:max-w-5xl px-4 sm:px-6 py-4 sm:py-6 pb-24">
         {children}
       </div>
       <BottomNav />

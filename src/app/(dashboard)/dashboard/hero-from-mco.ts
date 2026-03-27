@@ -4,13 +4,14 @@ import type { ServerRotation } from "@/lib/template-rotation";
 // ---------------------------------------------------------------------------
 // Dashboard hero presentation layer — maps MCO data keys to display strings.
 // MCO stays data-only. All copy lives here, in the dashboard layer.
+// Tone: "ты", не "вы". Принципиально (MEDHUB_BRIEF_2026).
 // ---------------------------------------------------------------------------
 
 // --- Opening line ---
 
 const TIME_GREETINGS: Record<McoSnapshot["time_of_day"], string> = {
   morning: "Доброе утро",
-  day: "Добрый день",
+  day: "Привет",
   evening: "Добрый вечер",
   night: "Доброй ночи",
 };
@@ -18,7 +19,7 @@ const TIME_GREETINGS: Record<McoSnapshot["time_of_day"], string> = {
 const GREETING_POOLS: Record<GreetingContextKey, readonly string[]> = {
   first_visit: [
     "я на месте.",
-    "рад, что вы здесь.",
+    "рад, что ты здесь.",
     "я готов начать.",
   ],
   returned_today: [
@@ -33,13 +34,13 @@ const GREETING_POOLS: Record<GreetingContextKey, readonly string[]> = {
   ],
   returned_after_1_2_days: [
     "с возвращением.",
-    "рад вас видеть снова.",
+    "рад тебя видеть.",
     "снова на связи.",
   ],
   returned_after_3_plus_days: [
-    "давно не заходили — давайте обновим.",
-    "давно не виделись. Давайте наверстаем.",
-    "вас не было какое-то время. Обновим данные.",
+    "давно не заходил — давай обновим.",
+    "давно не виделись. Давай наверстаем.",
+    "тебя не было какое-то время. Обновим данные.",
   ],
   returned_after_long_absence_with_data: [
     "данные на месте, но свежих записей не хватает.",
@@ -73,7 +74,6 @@ export function heroObservation(mco: McoSnapshot): string {
 
   // Has data — describe completeness state
   if (filledCount === 0) {
-    // Had activity before but all layers empty (edge case)
     return "Мне нужна первая точка данных — запись самочувствия, показатель или документ.";
   }
 
@@ -85,14 +85,12 @@ export function heroObservation(mco: McoSnapshot): string {
   }
 
   if (filledCount >= 3) {
-    // Rich state — focus on recency
     if (mco.days_absent >= 3) {
-      return "Данные есть из нескольких источников, но свежих записей давно не было. Обновите — и картина станет актуальной.";
+      return "Данные есть из нескольких источников, но свежих записей давно не было. Обнови — и картина станет актуальной.";
     }
     if (mco.days_absent >= 1) {
       return "Картина складывается. Свежая запись сделает её точнее.";
     }
-    // Completeness summary
     const pct = Math.round((filledCount / totalLayers) * 100);
     if (pct >= 80) {
       return "Картина почти полная. Данные поступают — ничего критичного не вижу.";
@@ -100,17 +98,17 @@ export function heroObservation(mco: McoSnapshot): string {
     return "Данные есть из нескольких источников. Общая картина складывается.";
   }
 
-  return "Я вижу вашу ситуацию. Продолжаем собирать картину.";
+  return "Я вижу твою ситуацию. Продолжаем собирать картину.";
 }
 
 function entryModeObservation(entryMode: string | null): string {
   switch (entryMode) {
     case "diagnosis":
-      return "Я запомнил вашу ситуацию. Первая запись — и я начну отслеживать.";
+      return "Я запомнил твою ситуацию. Первая запись — и я начну отслеживать.";
     case "caregiver":
-      return "Я буду держать картину. Добавьте первую запись — и мне будет от чего отталкиваться.";
+      return "Я буду держать картину. Добавь первую запись — и мне будет от чего отталкиваться.";
     case "systematic":
-      return "Хорошее начало. Первая точка данных — и я начну собирать вашу линию.";
+      return "Хорошее начало. Первая точка данных — и я начну собирать твою линию.";
     default:
       return "Мне нужна первая точка данных — запись самочувствия, показатель или документ.";
   }
@@ -167,7 +165,7 @@ const ACTION_MAP: Record<PriorityActionKey, HeroCta> = {
     href: "/diary",
   },
   none: {
-    text: "Спросите меня о данных",
+    text: "Спроси меня о данных",
     sub: "Могу разобрать тренды или подготовить вопросы врачу",
     href: "/ai-chat",
   },
@@ -190,42 +188,21 @@ export function heroEvidence(mco: McoSnapshot): HeroEvidence[] {
   const items: HeroEvidence[] = [];
 
   if (c.diary > 0) {
-    items.push({
-      label: "Дневник",
-      detail: completenessLabel(c.diary),
-      href: "/diary",
-    });
+    items.push({ label: "Дневник", detail: completenessLabel(c.diary), href: "/diary" });
   }
   if (c.vitals > 0) {
-    items.push({
-      label: "Показатели",
-      detail: completenessLabel(c.vitals),
-      href: "/vitals",
-    });
+    items.push({ label: "Показатели", detail: completenessLabel(c.vitals), href: "/vitals" });
   }
   if (c.medications > 0) {
-    items.push({
-      label: "Лекарства",
-      detail: "есть",
-      href: "/medications",
-    });
+    items.push({ label: "Лекарства", detail: "есть", href: "/medications" });
   }
   if (c.documents > 0) {
-    items.push({
-      label: "Документы",
-      detail: completenessLabel(c.documents),
-      href: "/documents",
-    });
+    items.push({ label: "Документы", detail: completenessLabel(c.documents), href: "/documents" });
   }
   if (c.emotions > 0) {
-    items.push({
-      label: "Эмоции",
-      detail: completenessLabel(c.emotions),
-      href: "/emotions",
-    });
+    items.push({ label: "Эмоции", detail: completenessLabel(c.emotions), href: "/emotions" });
   }
 
-  // If nothing yet but onboarding done
   if (items.length === 0 && mco.entry_mode) {
     items.push({ label: "Знакомство", detail: "контекст сохранён", href: "/ai-chat" });
   }
@@ -239,7 +216,7 @@ function completenessLabel(score: number): string {
   return "начало";
 }
 
-// --- Data state (derived from MCO, replaces old dataLayers logic) ---
+// --- Data state ---
 
 export function heroDataState(mco: McoSnapshot): "empty" | "partial" | "rich" {
   const c = mco.data_completeness;
