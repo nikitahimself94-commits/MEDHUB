@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { ServerRotation } from "@/lib/template-rotation";
 
 // ---------------------------------------------------------------------------
-// MCO v1 — Medical Context Object (data-only current snapshot)
+// MCO v2 — Medical Context Object (data-only current snapshot)
 // ---------------------------------------------------------------------------
 
 export type GreetingContextKey =
@@ -31,7 +32,14 @@ export interface McoDataCompleteness {
   emotions: number;     // 0..1
 }
 
+export interface McoCorrelation {
+  from: string;
+  to: string;
+  description: string;
+}
+
 export interface McoSnapshot {
+  // --- v1 fields ---
   entry_mode: string | null;
   current_focus: string | null;
   last_seen: string | null;
@@ -41,9 +49,44 @@ export interface McoSnapshot {
   greeting_context: GreetingContextKey;
   priority_action: PriorityActionKey;
   updated_at: string;
+  // --- v2 fields (foundation — populated with safe defaults for now) ---
+  name: string;
+  recent_patterns: string[];
+  open_questions: string[];
+  pending_nudges: string[];
+  correlations: McoCorrelation[];
+  last_used_templates: string[];
 }
 
 const MCO_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+// ---------------------------------------------------------------------------
+// Normalizer — guarantees v2 defaults on any snapshot (cached or fresh)
+// ---------------------------------------------------------------------------
+
+function normalizeMcoSnapshot(raw: Record<string, unknown>): McoSnapshot {
+  return {
+    // v1 fields — pass through
+    entry_mode: (raw.entry_mode as string) ?? null,
+    current_focus: (raw.current_focus as string) ?? null,
+    last_seen: (raw.last_seen as string) ?? null,
+    days_absent: (raw.days_absent as number) ?? -1,
+    time_of_day: (raw.time_of_day as McoSnapshot["time_of_day"]) ?? "day",
+    data_completeness: (raw.data_completeness as McoDataCompleteness) ?? {
+      vitals: 0, diary: 0, documents: 0, medications: 0, symptoms: 0, emotions: 0,
+    },
+    greeting_context: (raw.greeting_context as GreetingContextKey) ?? "first_visit",
+    priority_action: (raw.priority_action as PriorityActionKey) ?? "add_diary",
+    updated_at: (raw.updated_at as string) ?? new Date().toISOString(),
+    // v2 fields — safe defaults if missing from old cached JSON
+    name: (raw.name as string) ?? "",
+    recent_patterns: (raw.recent_patterns as string[]) ?? [],
+    open_questions: (raw.open_questions as string[]) ?? [],
+    pending_nudges: (raw.pending_nudges as string[]) ?? [],
+    correlations: (raw.correlations as McoCorrelation[]) ?? [],
+    last_used_templates: (raw.last_used_templates as string[]) ?? [],
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -51,6 +94,7 @@ const MCO_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
  * Returns cached MCO snapshot or rebuilds if stale / missing.
+ * All returned snapshots are normalized to MCO v2 shape.
  * Persists result to profiles.mco_snapshot + mco_updated_at.
  */
 export async function getOrRefreshMco(
@@ -69,15 +113,17 @@ export async function getOrRefreshMco(
     if (row?.mco_snapshot && row.mco_updated_at) {
       const age = Date.now() - new Date(row.mco_updated_at).getTime();
       if (age < MCO_TTL_MS) {
-        return row.mco_snapshot as McoSnapshot;
+        return normalizeMcoSnapshot(row.mco_snapshot as Record<string, unknown>);
       }
     }
   } catch {
     // Columns don't exist yet — proceed to rebuild
   }
 
-  // 2. Rebuild
-  const mco = await buildMcoSnapshot(supabase, patientId);
+  // 2. Rebuild + normalize for hard guarantee
+  const mco = normalizeMcoSnapshot(
+    await buildMcoSnapshot(supabase, patientId) as unknown as Record<string, unknown>,
+  );
 
   // 3. Persist explicitly
   const { error } = await supabase
@@ -187,6 +233,31 @@ async function buildMcoSnapshot(
       .eq("patient_id", patientId),
   ]);
 
+  // Separate query for companion_rotation_state (migration 00027).
+  // Isolated so that a failure here does not break the rest of the MCO build.
+  // Risk: if migration 00027 is not applied, Supabase may return an error
+  // (e.g. column does not exist). We handle both { error } and thrown
+  // exceptions to guarantee a non-fatal fallback.
+  let recentTemplates: string[] = [];
+  try {
+    const { data: rotRow, error: rotErr } = await supabase
+      .from("profiles")
+      .select("companion_rotation_state")
+      .eq("patient_id", patientId)
+      .limit(1)
+      .maybeSingle();
+
+    if (rotErr) {
+      console.error("[MCO] Failed to read rotation state:", rotErr.message);
+    } else {
+      recentTemplates = ServerRotation.extractRecentTemplates(
+        rotRow?.companion_rotation_state as Record<string, unknown> | null,
+      );
+    }
+  } catch (err) {
+    console.error("[MCO] Unexpected error reading rotation state:", err);
+  }
+
   const now = new Date();
   const onbCtx = profile?.onboarding_context as Record<string, string> | null;
 
@@ -240,6 +311,13 @@ async function buildMcoSnapshot(
     greeting_context,
     priority_action,
     updated_at: now.toISOString(),
+    // v2 fields
+    name: profile?.display_name ?? "",
+    recent_patterns: [],
+    open_questions: [],
+    pending_nudges: [],
+    correlations: [],
+    last_used_templates: recentTemplates,
   };
 }
 
