@@ -29,7 +29,6 @@ export default async function DashboardPage() {
     supabase.from("documents").select("title, category, created_at").eq("patient_id", patientId).order("created_at", { ascending: false }).limit(3),
   ]);
 
-  // Rotation state: separate fail-safe query (column may not exist if migration 00027 not applied)
   let rotationState: RotationState | null = null;
   {
     const { data: rotProfile } = await supabase
@@ -96,10 +95,8 @@ export default async function DashboardPage() {
     detail: string | null;
     state: "empty" | "active" | "stale" | "attention";
     icon: string;
-    size: "lg" | "md" | "sm";
   }
 
-  // --- Compact factual details from already-fetched data ---
   const diaryLen = (diary ?? []).length;
   const vitalsLen = (vitals ?? []).length;
   const medsLen = (meds ?? []).length;
@@ -129,46 +126,46 @@ export default async function DashboardPage() {
       status: modByKey.diary?.status ?? "нет записей",
       detail: diaryLen > 0 ? `${diaryLen} ${plural(diaryLen, "запись", "записи", "записей")}` : null,
       state: nodeState(Math.max(c.diary, c.emotions), pri === "add_diary" || pri === "update_diary" || pri === "add_emotions", !!modByKey.diary?.stale),
-      icon: "♡", size: "lg",
+      icon: "♡",
     },
     {
       key: "vitals", label: "Показатели", href: "/vitals",
       status: modByKey.vitals?.status ?? "нет данных",
       detail: vitalsLen > 0 ? `${vitalsLen} ${plural(vitalsLen, "значение", "значения", "значений")}` : null,
       state: nodeState(c.vitals, pri === "add_vitals", !!modByKey.vitals?.stale),
-      icon: "〜", size: "md",
+      icon: "〜",
     },
     {
       key: "documents", label: "Документы", href: "/documents",
       status: modByKey.documents?.status ?? "нет загрузок",
       detail: docsLen > 0 ? `${docsLen} ${plural(docsLen, "файл", "файла", "файлов")}` : null,
       state: nodeState(c.documents, pri === "upload_document", false),
-      icon: "▤", size: "md",
+      icon: "▤",
     },
     {
       key: "medications", label: "Лекарства", href: "/medications",
       status: modByKey.medications?.status ?? "нет данных",
       detail: medsLen > 0 ? `${medsLen} ${plural(medsLen, "активное", "активных", "активных")}` : null,
       state: nodeState(c.medications, pri === "add_medications", false),
-      icon: "⊕", size: "md",
+      icon: "⊕",
     },
     {
       key: "symptoms", label: "Симптомы", href: "/symptoms-map",
       status: modByKey.symptoms?.status ?? "нет данных",
       detail: null,
       state: nodeState(c.symptoms, false, false),
-      icon: "◎", size: "sm",
+      icon: "◎",
     },
     {
       key: "lifestyle", label: "Образ жизни", href: "/timeline",
       status: modByKey.lifestyle?.status ?? "нет активности",
       detail: null,
       state: nodeState(c.diary > 0 || c.vitals > 0 ? 1 : 0, false, !!modByKey.lifestyle?.stale),
-      icon: "↻", size: "sm",
+      icon: "↻",
     },
   ];
 
-  // --- Correlation relation cues ---
+  // --- Correlations ---
   const corKeyToNode: Record<string, string> = {
     diary: "wellbeing", emotions: "wellbeing",
     vitals: "vitals", documents: "documents",
@@ -182,72 +179,90 @@ export default async function DashboardPage() {
     if (fromNode) relatedNodes.add(fromNode);
     if (toNode) relatedNodes.add(toNode);
   }
-  const RELATION_GLOW = "0 0 32px rgba(45,212,191,0.14)";
-  function nodeGlow(baseGlow: string, isRelated: boolean): string {
-    if (!isRelated) return baseGlow;
-    if (baseGlow === "none") return RELATION_GLOW;
-    return `${baseGlow}, ${RELATION_GLOW}`;
-  }
 
-  // --- SVG connection lines between correlated nodes ---
-  // Approximate node centers as % within the grid (3-col, 3-row)
-  const nodeCenters: Record<string, [number, number]> = {
-    wellbeing: [33, 18],
-    vitals: [83, 18],
-    documents: [17, 52],
-    medications: [50, 52],
-    symptoms: [83, 52],
-    lifestyle: [50, 85],
+  // Node positions as [left%, top%] within the map canvas
+  // Same coordinates used for SVG (viewBox 0 0 100 100) and CSS absolute placement
+  const nodePos: Record<string, [number, number]> = {
+    wellbeing: [50, 20],
+    vitals: [82, 38],
+    documents: [16, 48],
+    medications: [68, 62],
+    symptoms: [84, 82],
+    lifestyle: [40, 93],
   };
-  const connectionLines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+  const nodeCenters = nodePos;
+
+  // Structural base map — always visible, shows the system skeleton
+  const baseEdges: Array<[string, string]> = [
+    ["wellbeing", "vitals"],
+    ["wellbeing", "documents"],
+    ["wellbeing", "medications"],
+    ["vitals", "documents"],
+    ["vitals", "symptoms"],
+    ["medications", "documents"],
+    ["medications", "lifestyle"],
+    ["wellbeing", "lifestyle"],
+  ];
+  const baseLines = baseEdges.map(([a, b]) => ({
+    x1: nodeCenters[a][0], y1: nodeCenters[a][1],
+    x2: nodeCenters[b][0], y2: nodeCenters[b][1],
+  }));
+
+  // Active correlation lines — only from real MCO data
+  const activeLineKeys = new Set<string>();
+  const activeLines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
   for (const cor of shownCorrelations) {
-    const from = nodeCenters[corKeyToNode[cor.from]];
-    const to = nodeCenters[corKeyToNode[cor.to]];
+    const fromNode = corKeyToNode[cor.from];
+    const toNode = corKeyToNode[cor.to];
+    const from = nodeCenters[fromNode];
+    const to = nodeCenters[toNode];
     if (from && to) {
-      connectionLines.push({ x1: from[0], y1: from[1], x2: to[0], y2: to[1] });
+      activeLines.push({ x1: from[0], y1: from[1], x2: to[0], y2: to[1] });
+      activeLineKeys.add(`${fromNode}-${toNode}`);
+      activeLineKeys.add(`${toNode}-${fromNode}`);
     }
   }
 
-  const stateStyles: Record<MapNode["state"], { bg: string; border: string; glow: string; icon: string; label: string; status: string }> = {
+  const stateStyles: Record<MapNode["state"], { bg: string; border: string; glow: string; iconColor: string; textColor: string; statusColor: string }> = {
     empty: {
-      bg: "rgba(255,255,255,0.02)",
-      border: "1px solid rgba(255,255,255,0.06)",
+      bg: "rgba(255,255,255,0.015)",
+      border: "1px solid rgba(255,255,255,0.05)",
       glow: "none",
-      icon: "var(--text-muted)",
-      label: "var(--text-muted)",
-      status: "var(--text-muted)",
+      iconColor: "rgba(255,255,255,0.2)",
+      textColor: "rgba(255,255,255,0.3)",
+      statusColor: "rgba(255,255,255,0.25)",
     },
     active: {
-      bg: "rgba(45,212,191,0.04)",
-      border: "1px solid rgba(45,212,191,0.18)",
-      glow: "0 0 24px rgba(45,212,191,0.08)",
-      icon: "var(--accent)",
-      label: "var(--text-primary)",
-      status: "var(--accent)",
+      bg: "rgba(45,212,191,0.05)",
+      border: "1px solid rgba(45,212,191,0.22)",
+      glow: "0 0 30px rgba(45,212,191,0.10)",
+      iconColor: "var(--accent)",
+      textColor: "var(--text-primary)",
+      statusColor: "var(--accent)",
     },
     stale: {
       bg: "rgba(251,191,36,0.03)",
-      border: "1px solid rgba(251,191,36,0.12)",
-      glow: "0 0 20px rgba(251,191,36,0.05)",
-      icon: "var(--text-muted)",
-      label: "var(--text-primary)",
-      status: "rgba(251,191,36,0.7)",
+      border: "1px solid rgba(251,191,36,0.15)",
+      glow: "0 0 24px rgba(251,191,36,0.06)",
+      iconColor: "rgba(251,191,36,0.6)",
+      textColor: "var(--text-primary)",
+      statusColor: "rgba(251,191,36,0.7)",
     },
     attention: {
-      bg: "rgba(245,158,11,0.04)",
-      border: "1px solid rgba(245,158,11,0.25)",
-      glow: "0 0 28px rgba(245,158,11,0.1)",
-      icon: "var(--amber)",
-      label: "var(--text-primary)",
-      status: "var(--amber)",
+      bg: "rgba(245,158,11,0.05)",
+      border: "1px solid rgba(245,158,11,0.30)",
+      glow: "0 0 36px rgba(245,158,11,0.12)",
+      iconColor: "var(--amber)",
+      textColor: "var(--text-primary)",
+      statusColor: "var(--amber)",
     },
   };
 
-  // --- Consolidated presence insight (only when it adds real signal) ---
-  const insightLines: string[] = [];
-  if (mco.recent_patterns.length > 0) insightLines.push(mco.recent_patterns[0]);
-  if (mco.open_questions.length > 0 && mco.open_questions[0] !== agentObservation) {
-    insightLines.push(mco.open_questions[0]);
+  function resolveGlow(base: string, isRelated: boolean): string {
+    if (!isRelated) return base;
+    const relGlow = "0 0 40px rgba(45,212,191,0.18)";
+    if (base === "none") return relGlow;
+    return `${base}, ${relGlow}`;
   }
 
   return (
@@ -255,72 +270,48 @@ export default async function DashboardPage() {
       {process.env.NODE_ENV !== "production" && <ReviewReset />}
       <FirstArrivalOverlay show={isFirstArrival} />
 
-      {/* ===== AGENT ZONE — dominant presence ===== */}
-      <section
-        data-hero
-        className="relative"
-        style={{ backgroundColor: "var(--bg-surface)" }}
-      >
-        {/* Ambient glow — stronger */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: "radial-gradient(ellipse 80% 70% at 50% 10%, rgba(45,212,191,0.06) 0%, transparent 70%)",
-          }}
-        />
+      {/* ===== AGENT PRESENCE ===== */}
+      <section className="relative overflow-hidden" style={{ backgroundColor: "var(--bg-surface)" }}>
+        {/* Deep layered glow */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: "radial-gradient(ellipse 90% 80% at 50% 0%, rgba(45,212,191,0.09) 0%, transparent 60%)",
+        }} />
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: "radial-gradient(circle 400px at 30% 80%, rgba(45,212,191,0.03) 0%, transparent 70%)",
+        }} />
 
-        <div className="relative px-5 sm:px-8 pt-10 sm:pt-14 pb-8 sm:pb-10">
-          <p
-            className="text-[10px] font-semibold uppercase tracking-[0.2em]"
-            style={{ color: "var(--accent)", opacity: 0.6 }}
-          >
-            Твой помощник
-          </p>
-
-          {/* Headline — larger, more dominant */}
+        <div className="relative px-5 sm:px-8 pt-12 sm:pt-16 pb-10 sm:pb-14">
           <h1
-            className="mt-4 text-[26px] sm:text-[34px] lg:text-[40px] font-bold leading-[1.15] tracking-tight"
+            className="text-[30px] sm:text-[40px] lg:text-[48px] font-extrabold leading-[1.08] tracking-tight"
             style={{ color: "var(--text-primary)" }}
           >
             {agentOpening}
           </h1>
 
-          {/* Main observation — reads as "verdict" */}
           <p
-            className="mt-4 text-[16px] sm:text-[18px] leading-[1.6] max-w-2xl"
+            className="mt-5 text-[17px] sm:text-[20px] leading-[1.55] max-w-xl"
             style={{ color: "var(--text-muted)" }}
           >
             {agentObservation}
           </p>
 
-          {/* Agent insight — flat, no nested card */}
-          {(insightLines.length > 0 || unlockMessage) && (
-            <div className="mt-5 space-y-1">
-              {unlockMessage && (
-                <p className="text-[13px] font-medium" style={{ color: "var(--accent)" }}>
-                  {unlockMessage}
-                </p>
-              )}
-              {insightLines.map((line, i) => (
-                <p key={i} className="text-[12px] leading-relaxed" style={{ color: "var(--text-muted)", opacity: 0.75 }}>
-                  {line}
-                </p>
-              ))}
-            </div>
+          {unlockMessage && (
+            <p className="mt-4 text-[14px] font-medium" style={{ color: "var(--accent)" }}>
+              {unlockMessage}
+            </p>
           )}
 
-          {/* Evidence tags */}
           {evidence.length > 0 && (
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap gap-2">
               {evidence.map((e) => (
                 <Link
                   key={e.label}
                   href={e.href}
-                  className="rounded-full px-3 py-1.5 text-[11px] font-medium transition-all hover:scale-105"
+                  className="rounded-full px-3.5 py-1.5 text-[11px] font-semibold tracking-wide transition-all hover:scale-105"
                   style={{
-                    backgroundColor: "rgba(45,212,191,0.06)",
+                    backgroundColor: "rgba(45,212,191,0.08)",
                     color: "var(--accent)",
-                    border: "1px solid rgba(45,212,191,0.12)",
+                    border: "1px solid rgba(45,212,191,0.15)",
                   }}
                 >
                   {e.label} · {e.detail}
@@ -328,178 +319,223 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
-
         </div>
-
-        {/* Separator gradient */}
-        <div
-          className="h-px"
-          style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.12) 30%, rgba(45,212,191,0.12) 70%, transparent)" }}
-        />
       </section>
 
-      {/* ===== HEALTH MAP — spatial node composition ===== */}
-      <div className="px-4 sm:px-6 pt-6 sm:pt-8 pb-2">
+      {/* ===== HEALTH MAP ===== */}
+      <div className="relative px-4 sm:px-6 pt-8 sm:pt-10 pb-4">
+        {/* Map field background — centered on hub */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0" style={{
+          background: "radial-gradient(ellipse 70% 50% at 50% 25%, rgba(45,212,191,0.04) 0%, transparent 70%)",
+        }} />
         {mapHelper && (
-          <p className="mb-3 px-1 text-[11px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.45 }}>
+          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--accent)", opacity: 0.4 }}>
             {mapHelper}
           </p>
         )}
 
-        <div className="relative">
-          {/* SVG connection lines overlay */}
-          {connectionLines.length > 0 && (
-            <svg
-              className="pointer-events-none absolute inset-0 z-10"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              style={{ width: "100%", height: "100%" }}
-            >
-              {connectionLines.map((line, i) => (
-                <line
-                  key={i}
-                  x1={line.x1}
-                  y1={line.y1}
-                  x2={line.x2}
-                  y2={line.y2}
-                  stroke="rgba(45,212,191,0.18)"
-                  strokeWidth="0.3"
-                  strokeLinecap="round"
-                  strokeDasharray="1.5 1"
-                />
-              ))}
-            </svg>
-          )}
-
-          <div
-            className="grid gap-3"
-            style={{
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gridTemplateRows: "auto auto auto",
-            }}
+        {/* Map container — height from the absolute-positioned canvas child */}
+        <div className="relative" style={{ height: "clamp(380px, 55vw, 500px)" }}>
+          {/* SVG lines — stretches to fill container so coordinates match CSS % */}
+          <svg
+            className="pointer-events-none absolute inset-0 z-10"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            style={{ width: "100%", height: "100%" }}
           >
-            {/* Row 1: Самочувствие (2 cols, hero node) + Цифры */}
-            {(() => {
-              const wb = nodes[0];
-              const ws = stateStyles[wb.state];
-              const isRelated = relatedNodes.has(wb.key);
-              return (
-                <Link
-                  key={wb.key}
-                  href={wb.href}
-                  className="relative col-span-2 flex items-center gap-4 rounded-2xl px-5 py-6 transition-all hover:brightness-110 active:scale-[0.98]"
-                  style={{ backgroundColor: ws.bg, border: ws.border, boxShadow: nodeGlow(ws.glow, isRelated) }}
-                >
-                  {isRelated && <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full" style={{ backgroundColor: "var(--accent)", opacity: 0.6, boxShadow: "0 0 8px rgba(45,212,191,0.4)" }} />}
-                  <span className="text-4xl" style={{ color: ws.icon }}>{wb.icon}</span>
-                  <div>
-                    <span className="text-[16px] font-bold" style={{ color: ws.label }}>{wb.label}</span>
-                    <span className="block text-[12px] mt-1" style={{ color: ws.status, opacity: wb.state === "empty" ? 0.5 : 1 }}>{wb.status}</span>
-                    {wb.detail && <span className="block text-[10px] mt-0.5" style={{ color: "var(--text-muted)", opacity: 0.45 }}>{wb.detail}</span>}
-                  </div>
-                </Link>
-              );
-            })()}
-            {(() => {
-              const nd = nodes[1];
-              const ns = stateStyles[nd.state];
-              const isRelated = relatedNodes.has(nd.key);
-              return (
-                <Link
-                  key={nd.key}
-                  href={nd.href}
-                  className="relative flex flex-col items-center justify-center text-center rounded-2xl px-2 py-5 transition-all hover:brightness-110 active:scale-[0.97]"
-                  style={{ backgroundColor: ns.bg, border: ns.border, boxShadow: nodeGlow(ns.glow, isRelated) }}
-                >
-                  {isRelated && <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full" style={{ backgroundColor: "var(--accent)", opacity: 0.6, boxShadow: "0 0 8px rgba(45,212,191,0.4)" }} />}
-                  <span className="text-2xl" style={{ color: ns.icon }}>{nd.icon}</span>
-                  <span className="mt-2 text-[12px] font-semibold" style={{ color: ns.label }}>{nd.label}</span>
-                  <span className="mt-0.5 text-[10px]" style={{ color: ns.status, opacity: nd.state === "empty" ? 0.5 : 1 }}>{nd.status}</span>
-                  {nd.detail && <span className="mt-0.5 text-[9px]" style={{ color: "var(--text-muted)", opacity: 0.4 }}>{nd.detail}</span>}
-                </Link>
-              );
-            })()}
+            <defs>
+              <filter id="active-glow">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
 
-            {/* Row 2: Документы + Лекарства + Симптомы */}
-            {nodes.slice(2, 5).map((node) => {
-              const s = stateStyles[node.state];
-              const isRelated = relatedNodes.has(node.key);
+            {/* Layer 1: Structural base — always visible, the system skeleton */}
+            {baseLines.map((line, i) => {
+              const key = `${baseEdges[i][0]}-${baseEdges[i][1]}`;
+              const isActive = activeLineKeys.has(key);
+              if (isActive) return null;
               return (
-                <Link
-                  key={node.key}
-                  href={node.href}
-                  className="relative flex flex-col items-center justify-center text-center rounded-2xl px-2 py-5 transition-all hover:brightness-110 active:scale-[0.97]"
-                  style={{ backgroundColor: s.bg, border: s.border, boxShadow: nodeGlow(s.glow, isRelated) }}
-                >
-                  {isRelated && <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full" style={{ backgroundColor: "var(--accent)", opacity: 0.6, boxShadow: "0 0 8px rgba(45,212,191,0.4)" }} />}
-                  <span className="text-xl" style={{ color: s.icon }}>{node.icon}</span>
-                  <span className="mt-2 text-[12px] font-semibold leading-tight" style={{ color: s.label }}>{node.label}</span>
-                  <span className="mt-0.5 text-[10px]" style={{ color: s.status, opacity: node.state === "empty" ? 0.5 : 1 }}>{node.status}</span>
-                  {node.detail && <span className="mt-0.5 text-[9px]" style={{ color: "var(--text-muted)", opacity: 0.4 }}>{node.detail}</span>}
-                </Link>
+                <line
+                  key={`base-${i}`}
+                  x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
+                  stroke="rgba(45,212,191,0.14)"
+                  strokeWidth="0.35"
+                  strokeLinecap="round"
+                />
               );
             })}
 
-            {/* Row 3: Образ жизни (spans 3 cols) */}
-            {(() => {
-              const lf = nodes[5];
-              const ls = stateStyles[lf.state];
+            {/* Node anchor dots — always visible, hub dot is largest */}
+            {Object.entries(nodeCenters).map(([key, [cx, cy]]) => (
+              <circle
+                key={`dot-${key}`}
+                cx={cx}
+                cy={cy}
+                r={key === "wellbeing" ? 2.5 : key === "lifestyle" ? 0.8 : 1.2}
+                fill={relatedNodes.has(key) ? "rgba(45,212,191,0.6)" : "rgba(45,212,191,0.15)"}
+              />
+            ))}
+
+            {/* Hub ring — always visible, marks the center of the system */}
+            <circle
+              cx={nodePos.wellbeing[0]}
+              cy={nodePos.wellbeing[1]}
+              r="12"
+              fill="none"
+              stroke="rgba(45,212,191,0.06)"
+              strokeWidth="0.3"
+            />
+
+            {/* Layer 2: Active correlations — strong visible signal */}
+            {activeLines.map((line, i) => (
+              <g key={`active-${i}`}>
+                <line
+                  x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
+                  stroke="rgba(45,212,191,0.15)"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  filter="url(#active-glow)"
+                />
+                <line
+                  x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
+                  stroke="rgba(45,212,191,0.50)"
+                  strokeWidth="0.8"
+                  strokeLinecap="round"
+                />
+                <circle cx={line.x1} cy={line.y1} r="2" fill="rgba(45,212,191,0.6)" />
+                <circle cx={line.x2} cy={line.y2} r="2" fill="rgba(45,212,191,0.6)" />
+              </g>
+            ))}
+          </svg>
+
+          {/* Spatial map canvas — nodes placed absolutely within parent's height */}
+          <div className="absolute inset-0">
+            {nodes.map((n) => {
+              const s = stateStyles[n.state];
+              const rel = relatedNodes.has(n.key);
+              const [left, top] = nodePos[n.key];
+              const isHub = n.key === "wellbeing";
+              const isBridge = n.key === "lifestyle";
+              const isSecondary = n.key === "vitals";
+              if (isBridge) {
+                return (
+                  <Link
+                    key={n.key}
+                    href={n.href}
+                    className="absolute flex items-center gap-1.5 rounded-full px-4 py-1 transition-all hover:brightness-125"
+                    style={{
+                      left: `${left}%`, top: `${top}%`,
+                      transform: "translate(-50%, -50%)",
+                      border: `1px solid ${n.state === "empty" ? "rgba(255,255,255,0.04)" : "rgba(45,212,191,0.10)"}`,
+                    }}
+                  >
+                    <span className="text-[10px]" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="text-[9px] font-medium" style={{ color: s.textColor }}>{n.label}</span>
+                    <span className="text-[8px]" style={{ color: s.statusColor, opacity: 0.5 }}>{n.status}</span>
+                  </Link>
+                );
+              }
+
               return (
                 <Link
-                  key={lf.key}
-                  href={lf.href}
-                  className="col-span-3 flex items-center gap-3 rounded-xl px-4 py-3 transition-all hover:brightness-110 active:scale-[0.98]"
-                  style={{ backgroundColor: ls.bg, border: ls.border, boxShadow: ls.glow }}
+                  key={n.key}
+                  href={n.href}
+                  className={`absolute flex flex-col items-center text-center transition-all hover:brightness-110 active:scale-[0.97] ${
+                    isHub ? "rounded-[32px] px-6 py-6 sm:px-8 sm:py-8" :
+                    isSecondary ? "rounded-2xl px-3 py-3.5" :
+                    "rounded-xl px-2 py-2.5"
+                  }`}
+                  style={{
+                    left: `${left}%`, top: `${top}%`,
+                    transform: "translate(-50%, -50%)",
+                    backgroundColor: s.bg,
+                    border: s.border,
+                    boxShadow: isHub
+                      ? `${resolveGlow(s.glow, rel)}, 0 0 60px rgba(45,212,191,0.06)`
+                      : resolveGlow(s.glow, rel),
+                    width: isHub ? "clamp(160px, 44%, 220px)" : isSecondary ? "clamp(90px, 24%, 120px)" : "clamp(72px, 20%, 96px)",
+                  }}
                 >
-                  <span className="text-base" style={{ color: ls.icon }}>{lf.icon}</span>
-                  <span className="text-[12px] font-semibold" style={{ color: ls.label }}>{lf.label}</span>
-                  <span className="text-[11px] ml-auto" style={{ color: ls.status, opacity: lf.state === "empty" ? 0.5 : 1 }}>{lf.status}</span>
+                  {rel && (
+                    <span
+                      className={`absolute ${isHub ? "top-2 right-3" : "top-1.5 right-1.5"} rounded-full`}
+                      style={{
+                        width: isHub ? 10 : 7, height: isHub ? 10 : 7,
+                        backgroundColor: "var(--accent)",
+                        boxShadow: "0 0 12px rgba(45,212,191,0.5)",
+                      }}
+                    />
+                  )}
+                  <span className={isHub ? "text-5xl sm:text-6xl" : isSecondary ? "text-xl" : "text-base"} style={{ color: s.iconColor }}>
+                    {n.icon}
+                  </span>
+                  <span
+                    className={`leading-tight ${isHub ? "mt-2 text-[16px] sm:text-[18px] font-extrabold" : isSecondary ? "mt-1 text-[10px] font-bold" : "mt-1 text-[9px] font-semibold"}`}
+                    style={{ color: s.textColor }}
+                  >
+                    {n.label}
+                  </span>
+                  <span
+                    className={isHub ? "mt-1 text-[12px]" : "mt-0.5 text-[8px]"}
+                    style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.4 : 0.9 }}
+                  >
+                    {n.status}
+                  </span>
+                  {isHub && n.detail && (
+                    <span className="mt-0.5 text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.4 }}>
+                      {n.detail}
+                    </span>
+                  )}
                 </Link>
               );
-            })()}
+            })}
           </div>
         </div>
       </div>
 
-      {/* ===== NEXT STEP — decisive action ===== */}
-      <div className="px-4 sm:px-6 pt-5 pb-6 sm:pb-8">
-        <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--accent)", opacity: 0.5 }}>
-          Следующий шаг
-        </p>
+      {/* ===== NEXT ACTION — the one decisive move ===== */}
+      <div className="px-4 sm:px-6 pt-8 pb-8 sm:pb-10">
         <Link
           href={agentNextStep.href}
-          className="group flex items-center gap-4 rounded-2xl px-5 py-4 transition-all hover:brightness-110 active:scale-[0.99]"
+          className="group relative block rounded-3xl px-6 py-7 sm:py-8 transition-all hover:brightness-110 active:scale-[0.995] overflow-hidden"
           style={{
-            backgroundColor: "rgba(45,212,191,0.05)",
-            border: "1px solid rgba(45,212,191,0.18)",
-            boxShadow: "0 0 32px rgba(45,212,191,0.05)",
+            backgroundColor: "rgba(45,212,191,0.07)",
+            border: "2px solid rgba(45,212,191,0.30)",
+            boxShadow: "0 0 60px rgba(45,212,191,0.10), inset 0 1px 0 rgba(45,212,191,0.08)",
           }}
         >
-          <span
-            className="shrink-0 flex h-11 w-11 items-center justify-center rounded-xl text-base font-bold transition-transform group-hover:scale-105"
-            style={{ backgroundColor: "rgba(45,212,191,0.10)", color: "var(--accent)" }}
-          >
-            →
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>
-              {agentNextStep.text}
-            </p>
-            <p className="mt-0.5 text-[13px]" style={{ color: "var(--text-muted)" }}>
-              {agentNextStep.sub}
-            </p>
-            {mco.pending_nudges.length > 1 && (
-              <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
-                {mco.pending_nudges[1]}
+          <div className="pointer-events-none absolute inset-0" style={{
+            background: "radial-gradient(ellipse 70% 100% at 10% 50%, rgba(45,212,191,0.08) 0%, transparent 60%)",
+          }} />
+          <div className="relative flex items-center gap-5">
+            <span
+              className="shrink-0 flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-bold transition-transform group-hover:scale-110"
+              style={{ backgroundColor: "rgba(45,212,191,0.15)", color: "var(--accent)" }}
+            >
+              →
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--accent)", opacity: 0.5 }}>
+                Следующий шаг
               </p>
-            )}
+              <p className="mt-1.5 text-[18px] sm:text-[21px] font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>
+                {agentNextStep.text}
+              </p>
+              <p className="mt-1 text-[14px]" style={{ color: "var(--text-muted)" }}>
+                {agentNextStep.sub}
+              </p>
+            </div>
+            <span
+              className="shrink-0 text-2xl font-bold transition-transform group-hover:translate-x-2"
+              style={{ color: "var(--accent)", opacity: 0.35 }}
+            >
+              →
+            </span>
           </div>
-          <span
-            className="shrink-0 text-base font-medium transition-transform group-hover:translate-x-1"
-            style={{ color: "var(--accent)", opacity: 0.5 }}
-          >
-            →
-          </span>
         </Link>
       </div>
     </div>
