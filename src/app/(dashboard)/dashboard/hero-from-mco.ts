@@ -246,3 +246,62 @@ export function heroDataState(mco: McoSnapshot): "empty" | "partial" | "rich" {
   if (filledCount <= 2) return "partial";
   return "rich";
 }
+
+// --- Unlock message (max 1, deterministic milestone) ---
+
+export function heroUnlockMessage(mco: McoSnapshot): string | null {
+  if (mco.greeting_context === "first_visit") return null;
+
+  const c = mco.data_completeness;
+  const filled = Object.values(c).filter((v) => v > 0).length;
+
+  if (filled >= 5) return "Все основные данные на месте — могу строить полную картину";
+  if (c.documents > 0 && filled >= 3) return "Документы загружены — анализирую вместе с остальными данными";
+  if (filled >= 3) return "Несколько слоёв данных — картина становится объёмной";
+  if (filled === 1) return "Первый слой данных есть — начинаю видеть картину";
+  return null;
+}
+
+// --- Map helper (contextual line above health map) ---
+
+export function heroMapHelper(mco: McoSnapshot): string | null {
+  const c = mco.data_completeness;
+  const filled = Object.values(c).filter((v) => v > 0).length;
+
+  if (filled === 0) return "Каждый узел — это слой данных. Начни с любого.";
+  if (filled <= 2) return "Активные узлы уже работают. Заполни остальные — картина станет точнее.";
+  if (mco.correlations.length > 0) return "Между узлами уже есть связи. Чем больше данных, тем яснее сигнал.";
+  return null;
+}
+
+// --- Section-entry nudges (max 2, deterministic) ---
+
+export interface SectionNudge {
+  text: string;
+  href: string;
+}
+
+export function heroSectionNudges(mco: McoSnapshot): SectionNudge[] {
+  const c = mco.data_completeness;
+  const out: SectionNudge[] = [];
+
+  if (mco.priority_action === "add_diary" || mco.priority_action === "update_diary") {
+    out.push({ text: "Дневник ждёт свежую запись", href: "/diary" });
+  } else if (mco.priority_action === "add_vitals") {
+    out.push({ text: "Добавь показатель — давление, пульс или температуру", href: "/vitals" });
+  } else if (mco.priority_action === "upload_document") {
+    out.push({ text: "Загрузи анализ или заключение", href: "/documents" });
+  }
+
+  if (out.length < 2 && c.diary > 0 && c.vitals === 0) {
+    out.push({ text: "К дневнику бы добавить цифры — показатели", href: "/vitals" });
+  }
+  if (out.length < 2 && c.vitals > 0 && c.diary === 0) {
+    out.push({ text: "Показатели есть — дневник сделает картину полнее", href: "/diary" });
+  }
+  if (out.length < 2 && c.diary > 0 && c.vitals > 0 && c.documents === 0) {
+    out.push({ text: "Документ закрепит картину", href: "/documents" });
+  }
+
+  return out.slice(0, 2);
+}

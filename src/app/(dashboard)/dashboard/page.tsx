@@ -6,7 +6,8 @@ import { paraphraseHeroOpening } from "@/lib/haiku-paraphrase";
 import { OnboardingGate } from "./onboarding-gate";
 import { FirstArrivalOverlay } from "./first-arrival-overlay";
 import { ReviewReset } from "./review-reset";
-import { heroOpening, heroObservation, heroNextStep, heroEvidence } from "./hero-from-mco";
+import { heroOpening, heroObservation, heroNextStep, heroEvidence, heroUnlockMessage, heroMapHelper, heroSectionNudges } from "./hero-from-mco";
+import { AgentHint } from "./agent-hint";
 import { moduleStatuses } from "./module-statuses";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -70,6 +71,9 @@ export default async function DashboardPage() {
   const agentObservation = heroObservation(mco);
   const agentNextStep = heroNextStep(mco);
   const evidence = heroEvidence(mco);
+  const unlockMessage = heroUnlockMessage(mco);
+  const mapHelper = heroMapHelper(mco);
+  const sectionNudges = heroSectionNudges(mco);
 
   if (rotation.isDirty()) {
     const { error: rotErr } = await supabase
@@ -266,10 +270,18 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          {mco.last_used_templates.length > 0 && (
-            <p className="mt-2 text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.45 }}>
-              <span className="font-medium">Последний шаблон:</span> {mco.last_used_templates[0]}
-            </p>
+          {unlockMessage && (
+            <div className="mt-3">
+              <AgentHint label="↑" text={unlockMessage} variant="unlock" />
+            </div>
+          )}
+
+          {sectionNudges.length > 0 && (
+            <div className="mt-3 flex flex-col gap-1">
+              {sectionNudges.map((n) => (
+                <AgentHint key={n.href} label="→" text={n.text} href={n.href} variant="accent" />
+              ))}
+            </div>
           )}
         </div>
       </section>
@@ -310,6 +322,11 @@ export default async function DashboardPage() {
 
       {/* ===== HEALTH MAP — node composition ===== */}
       <div className="px-4 sm:px-6 pt-5 sm:pt-6">
+        {mapHelper && (
+          <p className="mb-3 px-1 text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
+            {mapHelper}
+          </p>
+        )}
         <div
           className="grid gap-2.5"
           style={{
