@@ -13,7 +13,7 @@ export default async function ProfilePage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Медицинская карточка</h2>
+      <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Медицинская карточка</h2>
       <div className="mt-3">
         <ModuleHelp
           title="Ваш медицинский профиль"

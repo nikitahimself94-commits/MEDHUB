@@ -28,18 +28,18 @@ export default async function EmotionsPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Эмоции</h2>
+      <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Эмоции</h2>
 
       {/* Agent state block */}
       <div
         className="mt-3 rounded-2xl px-5 py-4"
-        style={{ backgroundColor: "rgba(45,110,106,0.05)" }}
+        style={{ backgroundColor: "var(--accent-muted)" }}
       >
-        <p className="text-[14px] font-medium leading-snug" style={{ color: "#1A2F2B" }}>
+        <p className="text-[14px] font-medium leading-snug" style={{ color: "var(--text-primary)" }}>
           {state.line}
         </p>
         {state.supporting && (
-          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "#5A8F85" }}>
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
             {state.supporting}
           </p>
         )}
@@ -82,8 +82,8 @@ function EmotionCard({ entry }: { entry: EmotionEntry }) {
       <div className="flex items-start justify-between">
         <div className="flex flex-wrap gap-3">
           {params.map((p) => (
-            <span key={p.key} className="text-sm text-gray-700">
-              <span className="font-medium text-gray-500">{PARAM_LABELS[p.key]}:</span>{" "}
+            <span key={p.key} className="text-sm" style={{ color: "var(--text-muted)" }}>
+              <span className="font-medium" style={{ color: "var(--text-muted)" }}>{PARAM_LABELS[p.key]}:</span>{" "}
               {p.val}/5
             </span>
           ))}
@@ -91,10 +91,10 @@ function EmotionCard({ entry }: { entry: EmotionEntry }) {
         <DeleteEmotionButton entryId={entry.id} />
       </div>
 
-      <div className="mt-1 text-xs text-gray-400">{formattedDate}</div>
+      <div className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>{formattedDate}</div>
 
       {entry.notes && (
-        <p className="mt-2 text-sm text-gray-700">{entry.notes}</p>
+        <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>{entry.notes}</p>
       )}
     </div>
   );

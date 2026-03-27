@@ -163,13 +163,13 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
       >
         <div
           className="absolute inset-0"
-          style={{ backgroundColor: "rgba(8,18,16,0.92)" }}
+          style={{ backgroundColor: "rgba(13,17,23,0.92)" }}
         />
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 60% 50% at 50% 45%, rgba(45,110,106,0.08) 0%, transparent 70%)",
+              "radial-gradient(ellipse 60% 50% at 50% 45%, rgba(45,212,191,0.06) 0%, transparent 70%)",
           }}
         />
       </div>
@@ -181,9 +181,9 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
           style={{
             maxWidth: "clamp(340px, 50vw, 520px)",
             padding: "clamp(32px, 4.5vw, 52px)",
-            backgroundColor: "#1A2F2B",
+            backgroundColor: "var(--bg-surface)",
             boxShadow: pastBackdrop
-              ? "0 0 120px rgba(45,110,106,0.15), 0 0 0 1px rgba(45,110,106,0.12), 0 24px 80px rgba(0,0,0,0.3)"
+              ? "0 0 120px rgba(45,212,191,0.1), 0 0 0 1px rgba(45,212,191,0.08), 0 24px 80px rgba(0,0,0,0.4)"
               : "none",
             opacity: isLeaving ? 0 : pastBackdrop ? 1 : 0,
             transform: isLeaving
@@ -204,7 +204,7 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
               opacity: isReady ? 1 : 0,
               transition: "opacity 1200ms ease-out",
               boxShadow:
-                "inset 0 0 0 1px rgba(45,110,106,0.2), 0 0 60px rgba(45,110,106,0.06)",
+                "inset 0 0 0 1px rgba(45,212,191,0.15), 0 0 60px rgba(45,212,191,0.04)",
             }}
           />
 
@@ -214,7 +214,7 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
             style={{
               fontSize: "clamp(10px, 1.2vw, 12px)",
               letterSpacing: "0.15em",
-              color: "#4A8A82",
+              color: "var(--text-muted)",
               opacity: pastLabel ? 1 : 0,
               transform: pastLabel ? "translateY(0)" : "translateY(8px)",
               transition: `opacity 500ms ${EASE}, transform 500ms ${EASE}`,
@@ -225,10 +225,11 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
 
           {/* Headline — phase: headline */}
           <p
-            className="font-bold leading-tight text-white"
+            className="font-bold leading-tight"
             style={{
               marginTop: "clamp(14px, 2vw, 22px)",
               fontSize: "clamp(24px, 3.2vw, 36px)",
+              color: "var(--text-primary)",
               opacity: pastHeadline ? 1 : 0,
               transform: pastHeadline ? "translateY(0)" : "translateY(12px)",
               transition: `opacity 600ms ${EASE}, transform 600ms ${EASE}`,
@@ -243,7 +244,7 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
             style={{
               marginTop: "clamp(12px, 1.5vw, 18px)",
               fontSize: "clamp(14px, 1.6vw, 17px)",
-              color: "#A0C4BE",
+              color: "var(--text-muted)",
               opacity: pastBody ? 1 : 0,
               transform: pastBody ? "translateY(0)" : "translateY(10px)",
               transition: `opacity 500ms ${EASE}, transform 500ms ${EASE}`,
@@ -257,7 +258,7 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
             style={{
               marginTop: "clamp(6px, 1vw, 10px)",
               fontSize: "clamp(14px, 1.6vw, 17px)",
-              color: "#A0C4BE",
+              color: "var(--text-muted)",
               opacity: pastBody ? 1 : 0,
               transform: pastBody ? "translateY(0)" : "translateY(10px)",
               transition: `opacity 500ms ${EASE} 120ms, transform 500ms ${EASE} 120ms`,
@@ -270,18 +271,19 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
           <button
             type="button"
             onClick={dismiss}
-            className="arrival-cta w-full rounded-xl font-semibold text-white transition-transform active:scale-[0.98]"
+            className="arrival-cta w-full rounded-xl font-semibold transition-transform active:scale-[0.98]"
             style={{
               marginTop: "clamp(24px, 3.5vw, 36px)",
               padding: "clamp(15px, 2vw, 20px)",
               fontSize: "clamp(15px, 1.6vw, 17px)",
-              backgroundColor: "#2D6E6A",
+              backgroundColor: "var(--accent)",
+              color: "var(--bg-primary)",
               opacity: isReady || isLeaving ? 1 : 0,
               transform:
                 isReady || isLeaving ? "translateY(0)" : "translateY(12px)",
               transition: `opacity 500ms ${EASE}, transform 500ms ${EASE}`,
               boxShadow: isReady
-                ? "0 0 24px rgba(45,110,106,0.25), 0 4px 16px rgba(45,110,106,0.2)"
+                ? "0 0 24px rgba(45,212,191,0.2), 0 4px 16px rgba(45,212,191,0.15)"
                 : "none",
             }}
           >
@@ -292,15 +294,15 @@ export function FirstArrivalOverlay({ show }: { show: boolean }) {
 
       <style>{`
         @keyframes heroGlow {
-          0% { box-shadow: 0 0 0 3px rgba(45,110,106,0.6), 0 0 32px rgba(45,110,106,0.2); }
-          100% { box-shadow: 0 0 0 0px rgba(45,110,106,0), 0 0 0px rgba(45,110,106,0); }
+          0% { box-shadow: 0 0 0 3px rgba(45,212,191,0.5), 0 0 32px rgba(45,212,191,0.15); }
+          100% { box-shadow: 0 0 0 0px rgba(45,212,191,0), 0 0 0px rgba(45,212,191,0); }
         }
         .hero-arrival-glow {
           animation: heroGlow 3s ease-out forwards;
         }
         @keyframes ctaPulse {
-          0%, 100% { box-shadow: 0 0 24px rgba(45,110,106,0.25), 0 4px 16px rgba(45,110,106,0.2); }
-          50% { box-shadow: 0 0 32px rgba(45,110,106,0.35), 0 4px 24px rgba(45,110,106,0.3); }
+          0%, 100% { box-shadow: 0 0 24px rgba(45,212,191,0.2), 0 4px 16px rgba(45,212,191,0.15); }
+          50% { box-shadow: 0 0 32px rgba(45,212,191,0.3), 0 4px 24px rgba(45,212,191,0.2); }
         }
         .arrival-cta:not(:active) {
           animation: ctaPulse 3s ease-in-out infinite;

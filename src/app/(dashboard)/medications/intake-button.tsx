@@ -28,11 +28,12 @@ export function IntakeButton({
         type="button"
         onClick={handleClick}
         disabled={saving}
-        className="rounded-xl bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
+        className="rounded-xl bg-accent px-3 py-1.5 text-sm hover:brightness-90 disabled:opacity-50"
+        style={{ color: "var(--bg-primary)" }}
       >
         {saving ? "Сохранение..." : "Принято"}
       </button>
-      {error && <span className="text-xs text-red-500">{error}</span>}
+      {error && <span className="text-xs" style={{ color: "var(--amber)" }}>{error}</span>}
     </div>
   );
 }

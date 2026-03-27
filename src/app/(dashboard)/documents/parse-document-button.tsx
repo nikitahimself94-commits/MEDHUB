@@ -25,11 +25,11 @@ export function ParseDocumentButton({ documentId }: { documentId: string }) {
         type="button"
         onClick={handleParse}
         disabled={parsing}
-        className="text-sm text-brand-400 hover:text-brand-700 disabled:opacity-50"
+        className="text-sm text-accent hover:brightness-90 disabled:opacity-50"
       >
         {parsing ? "Анализ..." : "AI-разбор"}
       </button>
-      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-xs" style={{ color: "var(--amber)" }}>{error}</p>}
     </div>
   );
 }

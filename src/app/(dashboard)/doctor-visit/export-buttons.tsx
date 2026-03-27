@@ -44,14 +44,16 @@ export function ExportButtons({ text, date }: { text: string; date: string }) {
       <button
         type="button"
         onClick={handleCopy}
-        className="rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+        className="rounded px-3 py-1.5 text-xs font-medium hover:brightness-110"
+        style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
       >
         {copied ? "Скопировано!" : "Копировать текст"}
       </button>
       <button
         type="button"
         onClick={handleDownload}
-        className="rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+        className="rounded px-3 py-1.5 text-xs font-medium hover:brightness-110"
+        style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
       >
         Скачать .txt
       </button>

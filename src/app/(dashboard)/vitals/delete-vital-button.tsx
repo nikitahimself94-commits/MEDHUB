@@ -22,7 +22,8 @@ export function DeleteVitalButton({ vitalId }: { vitalId: string }) {
       type="button"
       onClick={handleClick}
       disabled={isPending}
-      className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50"
+      className="text-xs disabled:opacity-50"
+      style={{ color: "var(--amber)" }}
     >
       {isPending ? "Удаление..." : "Удалить"}
     </button>

@@ -23,7 +23,8 @@ export function DeleteDiaryButton({ id }: { id: string }) {
       type="button"
       onClick={handleDelete}
       disabled={deleting}
-      className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
+      className="text-sm disabled:opacity-50"
+      style={{ color: "var(--amber)" }}
     >
       {deleting ? "Удаление..." : "Удалить"}
     </button>

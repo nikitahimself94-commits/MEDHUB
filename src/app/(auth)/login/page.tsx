@@ -20,19 +20,19 @@ export default function LoginPage({
   return (
     <main
       className="relative flex min-h-screen items-center justify-center px-4 overflow-hidden"
-      style={{ background: "#2D6E6A" }}
+      style={{ background: "var(--bg-primary)" }}
     >
       {/* Background pattern */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage: `
-            radial-gradient(circle at 20% 20%, rgba(255,255,255,0.03) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(255,255,255,0.02) 0%, transparent 50%),
-            linear-gradient(135deg, rgba(255,255,255,0.02) 25%, transparent 25%),
-            linear-gradient(225deg, rgba(255,255,255,0.02) 25%, transparent 25%),
-            linear-gradient(315deg, rgba(255,255,255,0.02) 25%, transparent 25%),
-            linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%)
+            radial-gradient(circle at 20% 20%, rgba(45,212,191,0.04) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(45,212,191,0.03) 0%, transparent 50%),
+            linear-gradient(135deg, rgba(255,255,255,0.01) 25%, transparent 25%),
+            linear-gradient(225deg, rgba(255,255,255,0.01) 25%, transparent 25%),
+            linear-gradient(315deg, rgba(255,255,255,0.01) 25%, transparent 25%),
+            linear-gradient(45deg, rgba(255,255,255,0.01) 25%, transparent 25%)
           `,
           backgroundSize: "100% 100%, 100% 100%, 60px 60px, 60px 60px, 60px 60px, 60px 60px",
         }}
@@ -42,7 +42,7 @@ export default function LoginPage({
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "radial-gradient(ellipse 90% 50% at 50% 0%, rgba(100,200,185,0.15) 0%, transparent 60%)",
+          background: "radial-gradient(ellipse 90% 50% at 50% 0%, rgba(45,212,191,0.08) 0%, transparent 60%)",
         }}
       />
 
@@ -53,8 +53,8 @@ export default function LoginPage({
             <svg width="40" height="37" viewBox="0 0 32 30" fill="none" aria-hidden="true">
               <path
                 d="M16 28C16 28 2 20 2 10.5C2 5.8 5.8 2 10.5 2C13.1 2 15.4 3.3 16 4.5C16.6 3.3 18.9 2 21.5 2C26.2 2 30 5.8 30 10.5C30 20 16 28 16 28Z"
-                fill="rgba(255,255,255,0.15)"
-                stroke="rgba(255,255,255,0.6)"
+                fill="rgba(45,212,191,0.15)"
+                stroke="rgba(45,212,191,0.6)"
                 strokeWidth="1.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -64,13 +64,13 @@ export default function LoginPage({
 
           <h1
             className={`${dmSans.className} text-[3rem] font-bold tracking-[0.22em] leading-none`}
-            style={{ color: "#FFFFFF" }}
+            style={{ color: "var(--text-primary)" }}
           >
             MEDHUB
           </h1>
           <p
             className={`${playfair.className} mt-3 text-[17px] tracking-[0.04em]`}
-            style={{ color: "rgba(255,255,255,0.6)" }}
+            style={{ color: "var(--text-muted)" }}
           >
             Умный центр здоровья
           </p>
@@ -80,14 +80,15 @@ export default function LoginPage({
         <div
           className="rounded-3xl px-10 pb-10 pt-9"
           style={{
-            backgroundColor: "rgba(255,255,255,0.97)",
-            boxShadow: "0 4px 6px rgba(0,0,0,0.04), 0 20px 60px rgba(0,0,0,0.12)",
+            backgroundColor: "var(--bg-surface)",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.2), 0 20px 60px rgba(0,0,0,0.3)",
+            border: "1px solid var(--border)",
           }}
         >
           {searchParams.error && (
             <div
               className="mb-6 rounded-2xl px-4 py-3 text-[13px] font-medium"
-              style={{ backgroundColor: "#FDF2F2", color: "#8B4545" }}
+              style={{ backgroundColor: "rgba(245,158,11,0.1)", color: "var(--amber)" }}
             >
               {searchParams.error}
             </div>
@@ -99,7 +100,7 @@ export default function LoginPage({
                 <label
                   htmlFor="display_name"
                   className="mb-2 block text-[14px] font-semibold"
-                  style={{ color: "#1E3330" }}
+                  style={{ color: "var(--text-primary)" }}
                 >
                   Как к вам обращаться
                 </label>
@@ -110,9 +111,9 @@ export default function LoginPage({
                   placeholder="Ваше имя"
                   className="login-input block w-full rounded-xl px-5 py-4 text-[15px] outline-none transition-all placeholder:font-normal"
                   style={{
-                    backgroundColor: "#EDF1F0",
-                    border: "1.5px solid #C8D5D2",
-                    color: "#1A2F2B",
+                    backgroundColor: "var(--bg-surface-hover)",
+                    border: "1.5px solid var(--border)",
+                    color: "var(--text-primary)",
                   }}
                 />
               </div>
@@ -122,7 +123,7 @@ export default function LoginPage({
               <label
                 htmlFor="email"
                 className="mb-2 block text-[14px] font-semibold"
-                style={{ color: "#1E3330" }}
+                style={{ color: "var(--text-primary)" }}
               >
                 Email
               </label>
@@ -134,9 +135,9 @@ export default function LoginPage({
                 placeholder="you@example.com"
                 className="login-input block w-full rounded-xl px-5 py-4 text-[15px] outline-none transition-all placeholder:font-normal"
                 style={{
-                  backgroundColor: "#EDF1F0",
-                  border: "1.5px solid #C8D5D2",
-                  color: "#1A2F2B",
+                  backgroundColor: "var(--bg-surface-hover)",
+                  border: "1.5px solid var(--border)",
+                  color: "var(--text-primary)",
                 }}
               />
             </div>
@@ -145,7 +146,7 @@ export default function LoginPage({
               <label
                 htmlFor="password"
                 className="mb-2 block text-[14px] font-semibold"
-                style={{ color: "#1E3330" }}
+                style={{ color: "var(--text-primary)" }}
               >
                 Пароль
               </label>
@@ -158,9 +159,9 @@ export default function LoginPage({
                 placeholder={isSignup ? "Минимум 6 символов" : "Введите пароль"}
                 className="login-input block w-full rounded-xl px-5 py-4 text-[15px] outline-none transition-all placeholder:font-normal"
                 style={{
-                  backgroundColor: "#EDF1F0",
-                  border: "1.5px solid #C8D5D2",
-                  color: "#1A2F2B",
+                  backgroundColor: "var(--bg-surface-hover)",
+                  border: "1.5px solid var(--border)",
+                  color: "var(--text-primary)",
                 }}
               />
             </div>
@@ -168,10 +169,11 @@ export default function LoginPage({
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full rounded-xl py-4 text-[15px] font-semibold text-white transition-all hover:shadow-xl active:scale-[0.98]"
+                className="w-full rounded-xl py-4 text-[15px] font-semibold transition-all hover:shadow-xl active:scale-[0.98]"
                 style={{
-                  backgroundColor: "#2D6E6A",
-                  boxShadow: "0 4px 16px rgba(45,110,106,0.3)",
+                  backgroundColor: "var(--accent)",
+                  color: "var(--bg-primary)",
+                  boxShadow: "var(--glow)",
                 }}
               >
                 {isSignup ? "Создать аккаунт" : "Войти"}
@@ -180,18 +182,18 @@ export default function LoginPage({
           </form>
 
           {/* Toggle login/signup */}
-          <p className="mt-5 text-center text-[13px]" style={{ color: "#5A8F85" }}>
+          <p className="mt-5 text-center text-[13px]" style={{ color: "var(--text-muted)" }}>
             {isSignup ? (
               <>
                 Уже есть аккаунт?{" "}
-                <Link href="/login" className="font-semibold underline" style={{ color: "#2D6E6A" }}>
+                <Link href="/login" className="font-semibold underline" style={{ color: "var(--accent)" }}>
                   Войти
                 </Link>
               </>
             ) : (
               <>
                 Нет аккаунта?{" "}
-                <Link href="/login?mode=signup" className="font-semibold underline" style={{ color: "#2D6E6A" }}>
+                <Link href="/login?mode=signup" className="font-semibold underline" style={{ color: "var(--accent)" }}>
                   Зарегистрироваться
                 </Link>
               </>
@@ -202,7 +204,7 @@ export default function LoginPage({
         {/* Footer */}
         <p
           className="mt-8 text-center text-[12px] font-medium"
-          style={{ color: "rgba(255,255,255,0.35)" }}
+          style={{ color: "var(--text-muted)", opacity: 0.5 }}
         >
           Ваши данные защищены и доступны только вам
         </p>

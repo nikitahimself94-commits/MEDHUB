@@ -61,56 +61,60 @@ export function EditMedicationForm({ med }: { med: Medication }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="text-xs text-gray-400 hover:text-gray-600"
+        className="text-xs hover:brightness-110"
+        style={{ color: "var(--text-muted)" }}
       >
         Редактировать
       </button>
     );
   }
 
-  const labelClass = "block text-xs font-medium text-gray-600 mb-1";
+  const labelClass = "block text-xs font-medium mb-1";
+  const labelStyle = { color: "var(--text-muted)" } as const;
   const inputClass =
-    "w-full rounded-xl border border-gray-200 bg-white/60 px-3 py-2 text-sm transition-all focus:border-brand-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/10";
+    "w-full rounded-xl px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-accent-muted focus:border-accent";
+  const inputStyle = { backgroundColor: "var(--bg-surface-hover)", border: "1px solid var(--border)", color: "var(--text-primary)" } as const;
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-xl border border-gray-200 bg-white/40 p-4">
+    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-xl p-4" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
       <div>
-        <label className={labelClass}>Название *</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+        <label className={labelClass} style={labelStyle}>Название *</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} style={inputStyle} />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelClass}>Дозировка</label>
-          <input value={dosage} onChange={(e) => setDosage(e.target.value)} className={inputClass} />
+          <label className={labelClass} style={labelStyle}>Дозировка</label>
+          <input value={dosage} onChange={(e) => setDosage(e.target.value)} className={inputClass} style={inputStyle} />
         </div>
         <div>
-          <label className={labelClass}>Расписание</label>
-          <input value={schedule} onChange={(e) => setSchedule(e.target.value)} className={inputClass} />
+          <label className={labelClass} style={labelStyle}>Расписание</label>
+          <input value={schedule} onChange={(e) => setSchedule(e.target.value)} className={inputClass} style={inputStyle} />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelClass}>Дата начала</label>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputClass} />
+          <label className={labelClass} style={labelStyle}>Дата начала</label>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputClass} style={inputStyle} />
         </div>
         <div>
-          <label className={labelClass}>Дата окончания</label>
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputClass} />
+          <label className={labelClass} style={labelStyle}>Дата окончания</label>
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputClass} style={inputStyle} />
         </div>
       </div>
 
       <div>
-        <label className={labelClass}>Заметка</label>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} />
+        <label className={labelClass} style={labelStyle}>Заметка</label>
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} style={inputStyle} />
       </div>
 
       <div className="flex items-center gap-3">
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className="rounded-xl bg-accent px-4 py-2 text-sm font-medium hover:brightness-90 disabled:opacity-50"
+          style={{ color: "var(--bg-primary)" }}
         >
           {isPending ? "Сохранение..." : "Сохранить"}
         </button>
@@ -118,11 +122,12 @@ export function EditMedicationForm({ med }: { med: Medication }) {
           type="button"
           onClick={handleCancel}
           disabled={isPending}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm hover:brightness-110"
+          style={{ color: "var(--text-muted)" }}
         >
           Отмена
         </button>
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {error && <span className="text-sm" style={{ color: "var(--amber)" }}>{error}</span>}
       </div>
     </form>
   );

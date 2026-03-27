@@ -62,18 +62,18 @@ export default async function SymptomsMapPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Карта симптомов</h2>
+      <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Карта симптомов</h2>
 
       {/* Agent state block */}
       <div
         className="mt-3 rounded-2xl px-5 py-4"
-        style={{ backgroundColor: "rgba(45,110,106,0.05)" }}
+        style={{ backgroundColor: "var(--accent-muted)" }}
       >
-        <p className="text-[14px] font-medium leading-snug" style={{ color: "#1A2F2B" }}>
+        <p className="text-[14px] font-medium leading-snug" style={{ color: "var(--text-primary)" }}>
           {state.line}
         </p>
         {state.supporting && (
-          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "#5A8F85" }}>
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
             {state.supporting}
           </p>
         )}

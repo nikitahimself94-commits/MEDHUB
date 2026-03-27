@@ -89,6 +89,7 @@ export function OnboardingGate() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [textValue, setTextValue] = useState("");
   const [saving, setSaving] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
 
   const step: OnboardingStep = ONBOARDING_STEPS[stepId];
@@ -152,12 +153,13 @@ export function OnboardingGate() {
     } catch {
       // Don't block
     }
-    // completeOnboarding calls revalidatePath("/dashboard") which triggers
-    // automatic RSC re-fetch. router.refresh() is a safety fallback.
-    // IMPORTANT: do NOT call router.push("/dashboard") here — it creates a
-    // competing navigation to the same URL, causing the overlay component
-    // to unmount/remount and reset its display timer.
-    router.refresh();
+    // Smooth exit: show farewell, fade out, then let dashboard appear
+    setSaving(false);
+    setLeaving(true);
+    // Wait for fade-out to complete before refreshing
+    setTimeout(() => {
+      router.refresh();
+    }, 900);
   }
 
   // ─── RENDER ───
@@ -165,13 +167,17 @@ export function OnboardingGate() {
   return (
     <div
       className="fixed inset-0 z-[100] flex flex-col"
-      style={{ backgroundColor: "#0F1F1D" }}
+      style={{
+        backgroundColor: "var(--bg-primary)",
+        opacity: leaving ? 0 : 1,
+        transition: leaving ? "opacity 800ms ease-out" : "none",
+      }}
     >
       {/* Subtle gradient overlay */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(45,110,106,0.15) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(45,212,191,0.08) 0%, transparent 70%)",
         }}
       />
 
@@ -186,7 +192,7 @@ export function OnboardingGate() {
           {stepId === "intro" && (
             <p
               className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-6"
-              style={{ color: "#4A8A82" }}
+              style={{ color: "var(--text-muted)" }}
             >
               Ваш помощник
             </p>
@@ -202,18 +208,18 @@ export function OnboardingGate() {
                   key={`${stepId}-${i}`}
                   className={`leading-relaxed ${
                     isHeadline
-                      ? "text-[22px] sm:text-[26px] font-bold text-white"
+                      ? "text-[22px] sm:text-[26px] font-bold"
                       : isQuestion
-                        ? "text-[18px] sm:text-[20px] font-semibold text-white"
+                        ? "text-[18px] sm:text-[20px] font-semibold"
                         : "text-[16px] sm:text-[18px]"
                   }`}
-                  style={
-                    isHeadline || isQuestion ? undefined : { color: "#A0C4BE" }
-                  }
+                  style={{
+                    color: isHeadline || isQuestion ? "var(--text-primary)" : "var(--text-muted)",
+                  }}
                 >
                   {line}
                   {i === visibleLines.length - 1 && !typingDone && (
-                    <span className="inline-block w-0.5 h-5 ml-0.5 align-text-bottom animate-pulse" style={{ backgroundColor: "#2D6E6A" }} />
+                    <span className="inline-block w-0.5 h-5 ml-0.5 align-text-bottom animate-pulse" style={{ backgroundColor: "var(--accent)" }} />
                   )}
                 </p>
               );
@@ -228,8 +234,8 @@ export function OnboardingGate() {
                 <button
                   type="button"
                   onClick={handleAgentContinue}
-                  className="rounded-xl px-6 py-3.5 text-[15px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
-                  style={{ backgroundColor: "#2D6E6A" }}
+                  className="rounded-xl px-6 py-3.5 text-[15px] font-semibold transition hover:brightness-110 active:scale-[0.98]"
+                  style={{ backgroundColor: "var(--accent)", color: "var(--bg-primary)" }}
                 >
                   {step.button}
                 </button>
@@ -244,11 +250,11 @@ export function OnboardingGate() {
                       type="button"
                       onClick={() => handleChoice(opt.value)}
                       className="w-full text-left rounded-xl px-5 py-4 transition hover:brightness-110 active:scale-[0.99]"
-                      style={{ backgroundColor: "rgba(45,110,106,0.15)", border: "1px solid rgba(45,110,106,0.25)" }}
+                      style={{ backgroundColor: "var(--accent-muted)", border: "1px solid var(--border)" }}
                     >
-                      <span className="text-[15px] font-semibold text-white">{opt.label}</span>
+                      <span className="text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>{opt.label}</span>
                       {opt.sub && (
-                        <span className="block text-[13px] mt-0.5" style={{ color: "#7AABA4" }}>{opt.sub}</span>
+                        <span className="block text-[13px] mt-0.5" style={{ color: "var(--text-muted)" }}>{opt.sub}</span>
                       )}
                     </button>
                   ))}
@@ -270,15 +276,19 @@ export function OnboardingGate() {
                     placeholder={step.placeholder}
                     rows={3}
                     autoFocus
-                    className="w-full rounded-xl px-5 py-3.5 text-[15px] text-white placeholder:text-white/30 resize-none outline-none transition-all focus:ring-2 focus:ring-white/10"
-                    style={{ backgroundColor: "rgba(45,110,106,0.15)", border: "1px solid rgba(45,110,106,0.25)" }}
+                    className="w-full rounded-xl px-5 py-3.5 text-[15px] placeholder:opacity-30 resize-none outline-none transition-all focus:ring-2 focus:ring-white/10"
+                    style={{
+                      backgroundColor: "var(--accent-muted)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-primary)",
+                    }}
                   />
                   <div className="mt-3 flex items-center gap-3">
                     <button
                       type="button"
                       onClick={handleTextSubmit}
-                      className="rounded-xl px-6 py-3 text-[15px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
-                      style={{ backgroundColor: "#2D6E6A" }}
+                      className="rounded-xl px-6 py-3 text-[15px] font-semibold transition hover:brightness-110 active:scale-[0.98]"
+                      style={{ backgroundColor: "var(--accent)", color: "var(--bg-primary)" }}
                     >
                       {step.buttonText || "Дальше"}
                     </button>
@@ -287,7 +297,7 @@ export function OnboardingGate() {
                         type="button"
                         onClick={handleTextSubmit}
                         className="text-[13px] transition"
-                        style={{ color: "#4A8A82" }}
+                        style={{ color: "var(--text-muted)" }}
                       >
                         Пропустить
                       </button>
@@ -296,17 +306,25 @@ export function OnboardingGate() {
                 </div>
               )}
 
-              {/* Final → single entry CTA */}
-              {step.type === "final" && (
+              {/* Final → single entry CTA or farewell */}
+              {step.type === "final" && !leaving && (
                 <button
                   type="button"
                   onClick={() => handleFinish()}
                   disabled={saving}
-                  className="w-full rounded-xl px-6 py-4 text-[15px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
-                  style={{ backgroundColor: "#2D6E6A" }}
+                  className="w-full rounded-xl px-6 py-4 text-[15px] font-semibold transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+                  style={{ backgroundColor: "var(--accent)", color: "var(--bg-primary)" }}
                 >
                   {saving ? "Сохраняю..." : step.getAction(answers).label}
                 </button>
+              )}
+              {step.type === "final" && leaving && (
+                <p
+                  className="text-[18px] sm:text-[20px] font-semibold animate-fadeIn"
+                  style={{ color: "var(--accent)" }}
+                >
+                  Я уже здесь, идём
+                </p>
               )}
             </div>
           )}
@@ -343,7 +361,7 @@ export function OnboardingGate() {
                   key={i}
                   className="h-0.5 flex-1 rounded-full transition-all duration-500"
                   style={{
-                    backgroundColor: idx >= i ? "#2D6E6A" : "rgba(45,110,106,0.15)",
+                    backgroundColor: idx >= i ? "var(--accent)" : "var(--accent-muted)",
                   }}
                 />
               ))}

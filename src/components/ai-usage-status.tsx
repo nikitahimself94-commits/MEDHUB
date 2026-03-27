@@ -11,21 +11,21 @@ export function AiUsageStatus({ used }: AiUsageStatusProps) {
   const isExhausted = remaining === 0;
 
   const barColor = isExhausted
-    ? "#C45C5C"
+    ? "var(--amber)"
     : isWarning
-      ? "#C49B3C"
-      : "#2D6E6A";
+      ? "var(--amber)"
+      : "var(--accent)";
 
   const textColor = isExhausted
-    ? "#9B4545"
+    ? "var(--amber)"
     : isWarning
-      ? "#8B7030"
-      : "#3A5C54";
+      ? "var(--amber)"
+      : "var(--text-muted)";
 
   return (
     <div
       className="rounded-xl px-4 py-2.5"
-      style={{ backgroundColor: "rgba(45,110,106,0.05)", border: "1px solid rgba(45,110,106,0.08)" }}
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}
     >
       <div className="flex items-center justify-between text-xs">
         <span style={{ color: textColor }}>
@@ -39,7 +39,7 @@ export function AiUsageStatus({ used }: AiUsageStatusProps) {
       </div>
       <div
         className="mt-1.5 h-1.5 w-full rounded-full"
-        style={{ backgroundColor: "rgba(45,110,106,0.1)" }}
+        style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
       >
         <div
           className="h-1.5 rounded-full transition-all"

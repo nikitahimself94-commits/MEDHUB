@@ -25,11 +25,12 @@ export function SecondOpinionButton({ documentId }: { documentId: string }) {
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="text-sm text-slate-500 hover:text-slate-700 disabled:opacity-50"
+        className="text-sm disabled:opacity-50"
+        style={{ color: "var(--text-muted)" }}
       >
         {loading ? "Анализ..." : "Второе мнение"}
       </button>
-      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-xs" style={{ color: "var(--amber)" }}>{error}</p>}
     </div>
   );
 }

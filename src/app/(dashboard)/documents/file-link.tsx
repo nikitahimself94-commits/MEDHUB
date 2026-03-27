@@ -27,13 +27,13 @@ export function FileLink({
   return (
     <span className="inline-flex items-center gap-2">
       {fileName && (
-        <span className="text-xs text-gray-500">{fileName}</span>
+        <span className="text-xs" style={{ color: "var(--text-muted)" }}>{fileName}</span>
       )}
       <button
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="text-sm text-brand-600 hover:text-brand-800 disabled:opacity-50"
+        className="text-sm text-accent hover:brightness-90 disabled:opacity-50"
       >
         {loading ? "Загрузка..." : "Открыть"}
       </button>

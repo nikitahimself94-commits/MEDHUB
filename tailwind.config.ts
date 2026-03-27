@@ -9,8 +9,25 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        /* Semantic tokens — dark theme (MEDHUB_BRIEF_2026) */
+        background: "var(--bg-primary)",
+        foreground: "var(--text-primary)",
+        surface: {
+          DEFAULT: "var(--bg-surface)",
+          hover: "var(--bg-surface-hover)",
+        },
+        accent: {
+          DEFAULT: "var(--accent)",
+          muted: "var(--accent-muted)",
+        },
+        amber: "var(--amber)",
+        "text-primary": "var(--text-primary)",
+        "text-muted": "var(--text-muted)",
+        border: "var(--border)",
+
+        /* Legacy brand scale — kept for backward compatibility with
+           existing .tsx inline styles until Module Color Sweep (Chunk 4).
+           Will be removed after all components migrate to semantic tokens. */
         brand: {
           50: "#EDF2F1",
           100: "#D4E0DE",
@@ -23,6 +40,9 @@ const config: Config = {
           800: "#1E4A47",
           900: "#1A2F2B",
         },
+      },
+      boxShadow: {
+        glow: "var(--glow)",
       },
     },
   },

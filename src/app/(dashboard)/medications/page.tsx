@@ -86,18 +86,18 @@ export default async function MedicationsPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Лекарства</h2>
+      <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Лекарства</h2>
 
       {/* Agent state block */}
       <div
         className="mt-3 rounded-2xl px-5 py-4"
-        style={{ backgroundColor: "rgba(45,110,106,0.05)" }}
+        style={{ backgroundColor: "var(--accent-muted)" }}
       >
-        <p className="text-[14px] font-medium leading-snug" style={{ color: "#1A2F2B" }}>
+        <p className="text-[14px] font-medium leading-snug" style={{ color: "var(--text-primary)" }}>
           {state.line}
         </p>
         {state.supporting && (
-          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "#5A8F85" }}>
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
             {state.supporting}
           </p>
         )}
@@ -111,7 +111,7 @@ export default async function MedicationsPage() {
 
         {activeMeds.length > 0 && (
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
               Активные ({activeMeds.length})
             </h3>
             <div className="space-y-3">
@@ -130,7 +130,7 @@ export default async function MedicationsPage() {
 
         {inactiveMeds.length > 0 && (
           <div className={activeMeds.length > 0 ? "mt-8" : ""}>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
               Неактивные ({inactiveMeds.length})
             </h3>
             <div className="space-y-3">
@@ -166,15 +166,22 @@ function MedicationCard({
   return (
     <div
       className={`rounded-xl card p-4 ${
-        !med.active ? "border-gray-200 opacity-60" : takenToday ? "border-teal-200" : "border-amber-200"
+        !med.active ? "opacity-60" : ""
       }`}
+      style={{
+        borderColor: !med.active
+          ? "var(--border)"
+          : takenToday
+            ? "rgba(45,212,191,0.2)"
+            : "rgba(245,158,11,0.15)",
+      }}
     >
       {/* Row 1: Name + dosage + status badge + today badge */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="truncate text-sm sm:text-base font-semibold text-gray-900">{med.name}</span>
+          <span className="truncate text-sm sm:text-base font-semibold" style={{ color: "var(--text-primary)" }}>{med.name}</span>
           {med.dosage && (
-            <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+            <span className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }}>
               {med.dosage}
             </span>
           )}
@@ -182,21 +189,23 @@ function MedicationCard({
         <div className="flex shrink-0 items-center gap-2">
           {med.active && todayCount !== undefined && (
             <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+              style={
                 takenToday
-                  ? "bg-teal-50 text-teal-700"
-                  : "bg-amber-50 text-amber-700"
-              }`}
+                  ? { backgroundColor: "var(--accent-muted)", color: "var(--accent)" }
+                  : { backgroundColor: "rgba(245,158,11,0.1)", color: "var(--amber)" }
+              }
             >
               {takenToday ? `Принят (${todayCount})` : "Не принят"}
             </span>
           )}
           <span
-            className={`rounded-full px-2 py-0.5 text-xs ${
+            className="rounded-full px-2 py-0.5 text-xs"
+            style={
               med.active
-                ? "bg-teal-50 text-teal-700"
-                : "bg-gray-100 text-gray-500"
-            }`}
+                ? { backgroundColor: "var(--accent-muted)", color: "var(--accent)" }
+                : { backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }
+            }
           >
             {med.active ? "Активный" : "Неактивный"}
           </span>
@@ -204,23 +213,23 @@ function MedicationCard({
       </div>
 
       {/* Row 2: Schedule + dates */}
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" style={{ color: "var(--text-muted)" }}>
         {med.schedule && (
           <span>{med.schedule}</span>
         )}
-        <span className="text-xs text-gray-400">
+        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
           {formatDate(med.start_date)}
           {med.end_date ? ` — ${formatDate(med.end_date)}` : " — наст. время"}
         </span>
       </div>
 
       {med.notes && (
-        <p className="mt-2 text-sm text-gray-500">{med.notes}</p>
+        <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>{med.notes}</p>
       )}
 
       {/* Row 3: Actions for active meds */}
       {med.active && todayCount !== undefined && (
-        <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3">
+        <div className="mt-3 flex items-center gap-2 border-t pt-3" style={{ borderColor: "var(--border)" }}>
           <IntakeButton medicationId={med.id} />
           <UndoIntakeButton
             medicationId={med.id}

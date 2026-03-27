@@ -41,8 +41,8 @@ export function DashboardNav() {
   return (
     <nav
       style={{
-        backgroundColor: "#CDD5D2",
-        borderBottom: "1px solid #BFC8C5",
+        backgroundColor: "var(--bg-primary)",
+        borderBottom: "1px solid var(--border)",
         padding: "8px 0",
       }}
     >
@@ -67,13 +67,13 @@ export function DashboardNav() {
                 textDecoration: "none",
                 ...(active
                   ? {
-                      backgroundColor: "#2D6E6A",
-                      color: "#FFFFFF",
-                      boxShadow: "0 2px 6px rgba(45,110,106,0.25)",
+                      backgroundColor: "var(--accent-muted)",
+                      color: "var(--accent)",
+                      boxShadow: "var(--glow)",
                     }
                   : {
                       backgroundColor: "transparent",
-                      color: "#4A7A72",
+                      color: "var(--text-muted)",
                     }),
               }}
             >

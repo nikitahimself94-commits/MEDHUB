@@ -30,7 +30,7 @@ export default async function DiaryPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Дневник самочувствия</h2>
+      <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Дневник самочувствия</h2>
       <div className="mt-3">
         <ModuleHelp
           title="Ежедневный дневник здоровья"
@@ -45,16 +45,16 @@ export default async function DiaryPage() {
 
       <div className="mt-8 space-y-4">
         {diaryEntries.length === 0 && (
-          <p className="text-sm text-gray-500">Записей пока нет</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Записей пока нет</p>
         )}
 
         {diaryEntries.map((entry) => (
           <div key={entry.id} className="rounded-xl card p-4">
             <div className="flex items-baseline justify-between">
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                 Самочувствие: {entry.wellbeing_score}/10
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                 {new Date(entry.created_at).toLocaleString("ru-RU", {
                   day: "2-digit",
                   month: "2-digit",
@@ -65,7 +65,7 @@ export default async function DiaryPage() {
               </span>
             </div>
 
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm" style={{ color: "var(--text-muted)" }}>
               {entry.pain_score != null && (
                 <span>
                   Боль: {entry.pain_score}/10
@@ -85,7 +85,8 @@ export default async function DiaryPage() {
                 {entry.symptoms.map((s, i) => (
                   <span
                     key={i}
-                    className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs text-red-700"
+                    className="rounded-full px-2.5 py-0.5 text-xs"
+                    style={{ backgroundColor: "rgba(245,158,11,0.1)", color: "var(--amber)" }}
                   >
                     {s}
                   </span>
@@ -94,7 +95,7 @@ export default async function DiaryPage() {
             )}
 
             {entry.notes && (
-              <p className="mt-2 text-sm text-gray-700">{entry.notes}</p>
+              <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>{entry.notes}</p>
             )}
 
             {entry.tags.length > 0 && (
@@ -102,7 +103,7 @@ export default async function DiaryPage() {
                 {entry.tags.map((t, i) => (
                   <span
                     key={i}
-                    className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs text-brand-700"
+                    className="rounded-full bg-accent-muted px-2.5 py-0.5 text-xs text-accent"
                   >
                     {t}
                   </span>
@@ -110,7 +111,7 @@ export default async function DiaryPage() {
               </div>
             )}
 
-            <div className="mt-2 border-t border-gray-100 pt-2">
+            <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--border)" }}>
               <DeleteDiaryButton id={entry.id} />
             </div>
           </div>

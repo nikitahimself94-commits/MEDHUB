@@ -27,11 +27,8 @@ export function ToggleActiveButton({
       type="button"
       onClick={handleClick}
       disabled={isPending}
-      className={`text-sm disabled:opacity-50 ${
-        active
-          ? "text-yellow-600 hover:text-yellow-800"
-          : "text-brand-500 hover:text-brand-800"
-      }`}
+      className="text-sm disabled:opacity-50"
+      style={{ color: active ? "var(--amber)" : "var(--accent)" }}
     >
       {isPending
         ? "Сохранение..."

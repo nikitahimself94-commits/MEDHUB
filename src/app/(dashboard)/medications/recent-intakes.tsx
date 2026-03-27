@@ -12,22 +12,22 @@ export function RecentIntakes({ intakes }: { intakes: RecentIntake[] }) {
 
   if (intakes.length === 0) {
     return (
-      <p className="mt-3 border-t pt-2 text-xs text-gray-400">
+      <p className="mt-3 border-t pt-2 text-xs" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
         Отметок пока нет
       </p>
     );
   }
 
   return (
-    <div className="mt-3 border-t pt-2">
+    <div className="mt-3 border-t pt-2" style={{ borderColor: "var(--border)" }}>
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-gray-500">
+        <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
           Последние отметки ({intakes.length})
         </p>
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="text-xs text-brand-600 hover:text-brand-800"
+          className="text-xs text-accent hover:brightness-90"
         >
           {open ? "Скрыть" : "Показать"}
         </button>
@@ -35,7 +35,7 @@ export function RecentIntakes({ intakes }: { intakes: RecentIntake[] }) {
       {open && (
         <ul className="mt-1 space-y-0.5">
           {intakes.map((intake, i) => (
-            <li key={i} className="text-xs text-gray-600">
+            <li key={i} className="text-xs" style={{ color: "var(--text-muted)" }}>
               {new Date(intake.taken_at).toLocaleTimeString("ru-RU", {
                 hour: "2-digit",
                 minute: "2-digit",

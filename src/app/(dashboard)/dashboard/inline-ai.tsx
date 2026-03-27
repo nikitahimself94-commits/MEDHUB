@@ -45,34 +45,34 @@ export function InlineAi() {
   return (
     <div className="rounded-2xl card p-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>
+        <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
           Спросите AI-помощника
         </h3>
-        <Link href="/ai-chat" className="text-xs font-medium" style={{ color: "#2D6E6A" }}>
+        <Link href="/ai-chat" className="text-xs font-medium" style={{ color: "var(--accent)" }}>
           Полный чат →
         </Link>
       </div>
-      <p className="mt-1 text-xs" style={{ color: "#8AA8A2" }}>
+      <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
         Я вижу ваши данные и помогу разобраться
       </p>
 
       {/* Answer display */}
       {(sending || answer || error) && (
-        <div className="mt-3 rounded-xl p-3" style={{ backgroundColor: "rgba(45,110,106,0.04)" }}>
+        <div className="mt-3 rounded-xl p-3" style={{ backgroundColor: "var(--accent-muted)" }}>
           {question && (
-            <p className="text-xs font-medium" style={{ color: "#5A8F85" }}>
+            <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
               {question}
             </p>
           )}
           {sending && (
-            <p className="mt-2 text-sm" style={{ color: "#8AA8A2" }}>
+            <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
               Думаю...
             </p>
           )}
           {answer && (
             <p
               className="mt-2 text-sm leading-relaxed whitespace-pre-wrap"
-              style={{ color: "#1A2F2B" }}
+              style={{ color: "var(--text-primary)" }}
             >
               {answer.length > 600 ? answer.slice(0, 600) + "..." : answer}
             </p>
@@ -81,13 +81,13 @@ export function InlineAi() {
             <Link
               href="/ai-chat"
               className="mt-1 inline-block text-xs font-medium"
-              style={{ color: "#2D6E6A" }}
+              style={{ color: "var(--accent)" }}
             >
               Читать полностью →
             </Link>
           )}
           {error && (
-            <p className="mt-2 text-sm text-red-600">{error}</p>
+            <p className="mt-2 text-sm" style={{ color: "var(--amber)" }}>{error}</p>
           )}
         </div>
       )}
@@ -99,12 +99,21 @@ export function InlineAi() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Задайте вопрос..."
           disabled={sending}
-          className="flex-1 rounded-xl border border-gray-200 bg-white/60 px-3 py-2 text-sm transition-all focus:border-brand-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/10 disabled:opacity-50"
+          className="flex-1 rounded-xl px-3 py-2 text-sm transition-all outline-none disabled:opacity-50"
+          style={{
+            backgroundColor: "var(--bg-surface-hover)",
+            border: "1px solid var(--border)",
+            color: "var(--text-primary)",
+          }}
         />
         <button
           type="submit"
           disabled={sending || !input.trim()}
-          className="rounded-xl bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className="rounded-xl px-3 py-2 text-sm font-medium transition disabled:opacity-50"
+          style={{
+            backgroundColor: "var(--accent)",
+            color: "var(--bg-primary)",
+          }}
         >
           {sending ? "..." : "→"}
         </button>
@@ -119,7 +128,7 @@ export function InlineAi() {
               type="button"
               onClick={() => handleExample(q)}
               className="rounded-full px-2.5 py-1 text-xs transition"
-              style={{ backgroundColor: "rgba(45,110,106,0.06)", color: "#2D6E6A" }}
+              style={{ backgroundColor: "var(--accent-muted)", color: "var(--accent)" }}
             >
               {q}
             </button>

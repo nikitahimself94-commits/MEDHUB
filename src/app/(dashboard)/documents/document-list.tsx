@@ -10,10 +10,10 @@ import { ParseResult } from "./parse-result";
 import { SecondOpinionButton } from "./second-opinion-button";
 import { OpinionResult } from "./opinion-result";
 
-const STATUS_LABELS: Record<string, { text: string; className: string }> = {
-  normal: { text: "Норма", className: "bg-teal-50 text-teal-700" },
-  review: { text: "Внимание", className: "bg-yellow-50 text-yellow-700" },
-  abnormal: { text: "Отклонение", className: "bg-red-50 text-red-700" },
+const STATUS_LABELS: Record<string, { text: string; style: React.CSSProperties }> = {
+  normal: { text: "Норма", style: { backgroundColor: "var(--accent-muted)", color: "var(--accent)" } },
+  review: { text: "Внимание", style: { backgroundColor: "rgba(245,158,11,0.1)", color: "var(--amber)" } },
+  abnormal: { text: "Отклонение", style: { backgroundColor: "rgba(245,158,11,0.1)", color: "var(--amber)" } },
 };
 
 interface Props {
@@ -40,12 +40,12 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
     return (
       <div
         className="rounded-2xl px-6 py-8 text-center"
-        style={{ backgroundColor: "rgba(45,110,106,0.03)", border: "1px dashed #BFC8C5" }}
+        style={{ backgroundColor: "var(--accent-muted)", border: "1px dashed var(--border)" }}
       >
-        <p className="text-sm font-medium" style={{ color: "#2D5A54" }}>
+        <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
           Загрузите первый документ — и AI начнёт работать
         </p>
-        <p className="mt-1 text-xs" style={{ color: "#5A8F85" }}>
+        <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
           Подойдёт любой анализ, выписка или заключение. Даже старый — это уже ценный контекст.
         </p>
       </div>
@@ -61,12 +61,14 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Поиск по названию..."
-          className="flex-1 rounded-xl border border-gray-200 bg-white/60 px-4 py-2.5 text-sm transition-all focus:border-brand-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/10"
+          className="flex-1 rounded-xl px-4 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-accent-muted focus:border-accent"
+          style={{ backgroundColor: "var(--bg-surface-hover)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
         />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-xl border border-gray-200 bg-white/60 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-brand-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/10"
+          className="rounded-xl px-4 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-accent-muted focus:border-accent"
+          style={{ backgroundColor: "var(--bg-surface-hover)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
         >
           <option value="">Все категории</option>
           {categories.map((c) => (
@@ -77,9 +79,9 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
 
       <div className="mt-4 space-y-4">
         {filtered.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-8 text-center">
-            <p className="text-sm font-medium text-gray-600">Ничего не найдено</p>
-            <p className="mt-1 text-xs text-gray-400">
+          <div className="rounded-2xl px-6 py-8 text-center" style={{ border: "1px dashed var(--border)", backgroundColor: "var(--bg-surface)" }}>
+            <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Ничего не найдено</p>
+            <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
               Попробуйте изменить запрос или сбросить фильтр категории
             </p>
           </div>
@@ -96,30 +98,30 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
               {/* Document header */}
               <div className="p-4">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <span className="font-medium truncate max-w-full" style={{ color: "#1A2F2B" }}>{doc.title}</span>
-                  <span className="shrink-0 ml-auto text-xs" style={{ color: "#8AA8A2" }}>
+                  <span className="font-medium truncate max-w-full" style={{ color: "var(--text-primary)" }}>{doc.title}</span>
+                  <span className="shrink-0 ml-auto text-xs" style={{ color: "var(--text-muted)" }}>
                     {new Date(doc.document_date).toLocaleDateString("ru-RU")}
                   </span>
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   {doc.category && (
-                    <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600">
+                    <span className="rounded-full px-2.5 py-0.5 text-xs" style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }}>
                       {doc.category}
                     </span>
                   )}
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs ${st.className}`}>
+                  <span className="rounded-full px-2.5 py-0.5 text-xs" style={st.style}>
                     {st.text}
                   </span>
                 </div>
 
                 {(doc.doctor || doc.lab) && (
-                  <p className="mt-1 text-sm" style={{ color: "#8AA8A2" }}>
+                  <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
                     {[doc.doctor, doc.lab].filter(Boolean).join(" · ")}
                   </p>
                 )}
 
                 {doc.notes && (
-                  <p className="mt-2 text-sm" style={{ color: "#3D6B62" }}>{doc.notes}</p>
+                  <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>{doc.notes}</p>
                 )}
 
                 {doc.tags.length > 0 && (
@@ -127,7 +129,7 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
                     {doc.tags.map((t, i) => (
                       <span
                         key={i}
-                        className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs text-brand-700"
+                        className="rounded-full bg-accent-muted px-2.5 py-0.5 text-xs text-accent"
                       >
                         {t}
                       </span>
@@ -143,7 +145,7 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
                   {hasParse && (
                     <span
                       className="rounded-full px-2.5 py-1 text-xs font-medium"
-                      style={{ backgroundColor: "rgba(45,110,106,0.08)", color: "#2D6E6A" }}
+                      style={{ backgroundColor: "var(--accent-muted)", color: "var(--accent)" }}
                     >
                       Разобран
                     </span>
@@ -154,7 +156,7 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
                   {hasOpinion && (
                     <span
                       className="rounded-full px-2.5 py-1 text-xs font-medium"
-                      style={{ backgroundColor: "rgba(100,116,139,0.08)", color: "#475569" }}
+                      style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }}
                     >
                       Второе мнение получено
                     </span>
@@ -172,7 +174,7 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
 
               {/* AI results — full-width blocks below the card body */}
               {hasAiResults && (
-                <div className="border-t" style={{ borderColor: "rgba(45,110,106,0.1)" }}>
+                <div className="border-t" style={{ borderColor: "var(--border)" }}>
                   {parseMap[doc.id] && (
                     <div className="p-4">
                       <ParseResult parse={parseMap[doc.id]} />
@@ -185,15 +187,15 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
                   )}
                   <div
                     className="px-4 pb-4 pt-1 border-t"
-                    style={{ borderColor: "rgba(45,110,106,0.08)" }}
+                    style={{ borderColor: "var(--border)" }}
                   >
                     <Link
                       href="/ai-chat"
                       className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition hover:shadow-sm"
                       style={{
-                        backgroundColor: "rgba(45,110,106,0.06)",
-                        color: "#2D6E6A",
-                        border: "1px solid rgba(45,110,106,0.12)",
+                        backgroundColor: "var(--accent-muted)",
+                        color: "var(--accent)",
+                        border: "1px solid rgba(45,212,191,0.15)",
                       }}
                     >
                       Обсудить с AI-помощником →

@@ -90,7 +90,7 @@ export function VitalsChart({ vitals }: { vitals: VitalPoint[] }) {
   const isBP = selectedType === "blood_pressure";
 
   return (
-    <div className="rounded border bg-white p-4">
+    <div className="rounded p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {VITAL_TYPES.map((t) => {
           const hasData = vitals.some((v) => v.vital_type === t.value);
@@ -101,11 +101,18 @@ export function VitalsChart({ vitals }: { vitals: VitalPoint[] }) {
               onClick={() => setSelectedType(t.value)}
               className={`rounded px-3 py-1.5 text-sm ${
                 selectedType === t.value
-                  ? "bg-brand-600 font-medium text-white"
+                  ? "bg-accent font-medium text-gray-900"
                   : hasData
-                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    : "bg-gray-50 text-gray-400"
+                    ? "hover:brightness-110"
+                    : "opacity-60"
               }`}
+              style={
+                selectedType === t.value
+                  ? undefined
+                  : hasData
+                    ? { backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }
+                    : { backgroundColor: "var(--bg-surface)", color: "var(--text-muted)" }
+              }
             >
               {t.label}
             </button>
@@ -114,30 +121,30 @@ export function VitalsChart({ vitals }: { vitals: VitalPoint[] }) {
       </div>
 
       {data.length === 0 && (
-        <p className="py-8 text-center text-sm text-gray-400">
-          Нет данных по типу «{label}»
+        <p className="py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+          Нет данных по типу &laquo;{label}&raquo;
         </p>
       )}
 
       {data.length === 1 && (
-        <p className="py-8 text-center text-sm text-gray-500">
+        <p className="py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
           {label}: {isBP ? `${data[0].systolic}/${data[0].diastolic}` : data[0].value} {unit}
           <br />
-          <span className="text-gray-400">Для графика нужно минимум 2 записи</span>
+          <span style={{ color: "var(--text-muted)" }}>Для графика нужно минимум 2 записи</span>
         </p>
       )}
 
       {data.length >= 2 && (
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 12, fill: "#6b7280" }}
+              tick={{ fontSize: 12, fill: "#7d8590" }}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: "#6b7280" }}
+              tick={{ fontSize: 12, fill: "#7d8590" }}
               tickLine={false}
               unit={unit ? ` ${unit}` : ""}
               width={70}
@@ -170,7 +177,7 @@ export function VitalsChart({ vitals }: { vitals: VitalPoint[] }) {
                 <Line
                   type="monotone"
                   dataKey="systolic"
-                  stroke="#ef4444"
+                  stroke="#f59e0b"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   connectNulls
@@ -178,7 +185,7 @@ export function VitalsChart({ vitals }: { vitals: VitalPoint[] }) {
                 <Line
                   type="monotone"
                   dataKey="diastolic"
-                  stroke="#3b82f6"
+                  stroke="#2dd4bf"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   connectNulls
@@ -188,7 +195,7 @@ export function VitalsChart({ vitals }: { vitals: VitalPoint[] }) {
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#3b82f6"
+                stroke="#2dd4bf"
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 connectNulls

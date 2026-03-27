@@ -25,11 +25,12 @@ export function GenerateButton() {
         type="button"
         onClick={handleGenerate}
         disabled={loading}
-        className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+        className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium hover:brightness-90 disabled:opacity-50"
+        style={{ color: "var(--bg-primary)" }}
       >
         {loading ? "Генерация..." : "Подготовить сводку"}
       </button>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm" style={{ color: "var(--amber)" }}>{error}</p>}
     </div>
   );
 }

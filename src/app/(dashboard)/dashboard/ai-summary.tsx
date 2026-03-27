@@ -57,17 +57,17 @@ export function AiSummary({ patientId }: { patientId: string }) {
   if (!summary && !loading && !error) {
     return (
       <div className="rounded-2xl card p-5">
-        <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>
+        <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
           Краткая сводка состояния
         </h3>
-        <p className="mt-1 text-sm" style={{ color: "#5A8F85" }}>
+        <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
           Я проанализирую ваши данные и расскажу, что вижу
         </p>
         <button
           type="button"
           onClick={generate}
-          className="mt-3 rounded-xl px-4 py-2 text-sm font-medium text-white transition hover:shadow-md"
-          style={{ backgroundColor: "#2D6E6A" }}
+          className="mt-3 rounded-xl px-4 py-2 text-sm font-medium transition hover:shadow-md"
+          style={{ backgroundColor: "var(--accent)", color: "var(--bg-primary)" }}
         >
           Получить сводку
         </button>
@@ -78,7 +78,7 @@ export function AiSummary({ patientId }: { patientId: string }) {
   return (
     <div className="rounded-2xl card p-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>
+        <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
           Краткая сводка состояния
         </h3>
         {summary && !loading && (
@@ -86,7 +86,7 @@ export function AiSummary({ patientId }: { patientId: string }) {
             type="button"
             onClick={generate}
             className="text-xs font-medium transition hover:underline"
-            style={{ color: "#2D6E6A" }}
+            style={{ color: "var(--accent)" }}
           >
             Обновить
           </button>
@@ -94,19 +94,19 @@ export function AiSummary({ patientId }: { patientId: string }) {
       </div>
 
       {loading && (
-        <p className="mt-3 text-sm" style={{ color: "#8AA8A2" }}>
+        <p className="mt-3 text-sm" style={{ color: "var(--text-muted)" }}>
           Анализирую ваши данные...
         </p>
       )}
 
       {error && (
         <div className="mt-3">
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm" style={{ color: "var(--amber)" }}>{error}</p>
           <button
             type="button"
             onClick={generate}
             className="mt-2 text-xs font-medium"
-            style={{ color: "#2D6E6A" }}
+            style={{ color: "var(--accent)" }}
           >
             Попробовать снова
           </button>
@@ -119,25 +119,25 @@ export function AiSummary({ patientId }: { patientId: string }) {
             <p
               key={i}
               className="text-sm leading-relaxed"
-              style={{ color: i === 2 ? "#5A8F85" : "#1A2F2B" }}
+              style={{ color: i === 2 ? "var(--text-muted)" : "var(--text-primary)" }}
             >
               {paragraph}
             </p>
           ))}
           {stale && (
-            <p className="text-xs" style={{ color: "#BFC8C5" }}>
+            <p className="text-xs" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
               Сводка обновлялась более 24ч назад
             </p>
           )}
           {/* Evidence links */}
-          <div className="mt-3 flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: "rgba(45,110,106,0.1)" }}>
-            <Link href="/records" className="text-xs font-medium" style={{ color: "#2D6E6A" }}>
+          <div className="mt-3 flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+            <Link href="/records" className="text-xs font-medium" style={{ color: "var(--accent)" }}>
               Записи →
             </Link>
-            <Link href="/documents" className="text-xs font-medium" style={{ color: "#2D6E6A" }}>
+            <Link href="/documents" className="text-xs font-medium" style={{ color: "var(--accent)" }}>
               Документы →
             </Link>
-            <Link href="/doctor-visit" className="text-xs font-medium" style={{ color: "#2D6E6A" }}>
+            <Link href="/doctor-visit" className="text-xs font-medium" style={{ color: "var(--accent)" }}>
               Врач →
             </Link>
           </div>

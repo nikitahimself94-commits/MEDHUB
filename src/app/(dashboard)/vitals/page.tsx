@@ -37,7 +37,7 @@ export default async function VitalsPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Показатели</h2>
+      <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Показатели</h2>
       <div className="mt-3">
         <ModuleHelp
           title="Отслеживание показателей здоровья"
@@ -58,7 +58,7 @@ export default async function VitalsPage() {
 
       <div className="mt-8">
         {vitals.length === 0 && (
-          <p className="text-sm text-gray-500">Записей пока нет</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Записей пока нет</p>
         )}
 
         {vitals.length > 0 && (
@@ -80,18 +80,18 @@ function VitalCard({ vital }: { vital: Vital }) {
     <div className="rounded-xl card p-4">
       <div className="flex items-baseline justify-between">
         <div className="flex items-baseline gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
             {label}
           </span>
-          <span className="text-lg font-medium text-gray-900">
+          <span className="text-lg font-medium" style={{ color: "var(--text-primary)" }}>
             {vital.value}
           </span>
-          <span className="text-sm text-gray-400">{vital.unit}</span>
+          <span className="text-sm" style={{ color: "var(--text-muted)" }}>{vital.unit}</span>
         </div>
         <DeleteVitalButton vitalId={vital.id} />
       </div>
 
-      <div className="mt-1 text-xs text-gray-400">
+      <div className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
         {new Date(vital.measured_at).toLocaleString("ru-RU", {
           day: "2-digit",
           month: "2-digit",
@@ -102,7 +102,7 @@ function VitalCard({ vital }: { vital: Vital }) {
       </div>
 
       {vital.notes && (
-        <p className="mt-2 text-sm text-gray-700">{vital.notes}</p>
+        <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>{vital.notes}</p>
       )}
     </div>
   );

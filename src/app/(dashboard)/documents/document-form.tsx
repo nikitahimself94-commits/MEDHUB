@@ -84,9 +84,11 @@ export function DocumentForm() {
     }
   }
 
-  const labelClass = "block text-sm font-medium text-gray-700 mb-1";
+  const labelClass = "block text-sm font-medium mb-1";
+  const labelStyle = { color: "var(--text-muted)" } as const;
   const inputClass =
-    "w-full rounded-xl border border-gray-200 bg-white/60 px-4 py-2.5 text-sm transition-all focus:border-brand-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/10";
+    "w-full rounded-xl px-4 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-accent-muted focus:border-accent";
+  const inputStyle = { backgroundColor: "var(--bg-surface-hover)", border: "1px solid var(--border)", color: "var(--text-primary)" } as const;
 
   if (!open) {
     return (
@@ -95,17 +97,17 @@ export function DocumentForm() {
           type="button"
           onClick={() => { setSaved(false); setError(""); setOpen(true); }}
           className="w-full rounded-2xl border-2 border-dashed px-6 py-6 text-center transition hover:shadow-md hover:border-solid active:scale-[0.99]"
-          style={{ borderColor: "#2D6E6A", backgroundColor: "rgba(45,110,106,0.04)" }}
+          style={{ borderColor: "var(--accent)", backgroundColor: "var(--accent-muted)" }}
         >
-          <span className="block text-2xl" style={{ color: "#2D6E6A" }}>+</span>
-          <span className="mt-1 block text-sm font-semibold" style={{ color: "#2D6E6A" }}>
+          <span className="block text-2xl" style={{ color: "var(--accent)" }}>+</span>
+          <span className="mt-1 block text-sm font-semibold" style={{ color: "var(--accent)" }}>
             Загрузить документ
           </span>
-          <span className="mt-1 block text-xs" style={{ color: "#5A8F85" }}>
+          <span className="mt-1 block text-xs" style={{ color: "var(--text-muted)" }}>
             Анализ, выписка, заключение — любой формат
           </span>
         </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
+        {saved && <span className="text-sm text-accent">Сохранено</span>}
       </div>
     );
   }
@@ -113,19 +115,20 @@ export function DocumentForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-xl card p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">Новый документ</h3>
+        <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Новый документ</h3>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm hover:brightness-110"
+          style={{ color: "var(--text-muted)" }}
         >
           Отмена
         </button>
       </div>
 
-      <div className="rounded bg-brand-50/60 px-4 py-3 text-sm text-brand-800">
+      <div className="rounded px-4 py-3 text-sm" style={{ backgroundColor: "var(--accent-muted)", color: "var(--text-primary)" }}>
         <p className="font-medium">Загрузите документ как есть — мы примем любой формат.</p>
-        <p className="mt-1 text-xs text-brand-700">
+        <p className="mt-1 text-xs" style={{ color: "var(--accent)" }}>
           Чтобы AI-разбор работал точнее, по возможности:
           сфотографируйте при хорошем свете · без бликов и теней · лист целиком, без обрезки · один документ = один файл
         </p>
@@ -133,20 +136,22 @@ export function DocumentForm() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <div>
-          <label className={labelClass}>Дата документа</label>
+          <label className={labelClass} style={labelStyle}>Дата документа</label>
           <input
             type="date"
             value={documentDate}
             onChange={(e) => setDocumentDate(e.target.value)}
             className={inputClass}
+            style={inputStyle}
           />
         </div>
         <div>
-          <label className={labelClass}>Категория</label>
+          <label className={labelClass} style={labelStyle}>Категория</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className={inputClass}
+            style={inputStyle}
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
@@ -158,43 +163,47 @@ export function DocumentForm() {
       </div>
 
       <div>
-        <label className={labelClass}>Название *</label>
+        <label className={labelClass} style={labelStyle}>Название *</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Общий анализ крови"
           className={inputClass}
+          style={inputStyle}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <div>
-          <label className={labelClass}>Врач</label>
+          <label className={labelClass} style={labelStyle}>Врач</label>
           <input
             value={doctor}
             onChange={(e) => setDoctor(e.target.value)}
             placeholder="Иванов А.П."
             className={inputClass}
+            style={inputStyle}
           />
         </div>
         <div>
-          <label className={labelClass}>Лаборатория / Клиника</label>
+          <label className={labelClass} style={labelStyle}>Лаборатория / Клиника</label>
           <input
             value={lab}
             onChange={(e) => setLab(e.target.value)}
             placeholder="Инвитро"
             className={inputClass}
+            style={inputStyle}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <div>
-          <label className={labelClass}>Статус</label>
+          <label className={labelClass} style={labelStyle}>Статус</label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             className={inputClass}
+            style={inputStyle}
           >
             {STATUSES.map((s) => (
               <option key={s.value} value={s.value}>
@@ -204,40 +213,43 @@ export function DocumentForm() {
           </select>
         </div>
         <div>
-          <label className={labelClass}>Файл</label>
+          <label className={labelClass} style={labelStyle}>Файл</label>
           <input
             type="file"
             accept=".pdf,.jpg,.jpeg,.png,.txt"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="w-full text-sm text-gray-600 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:text-gray-700 hover:file:bg-gray-200"
+            className="w-full text-sm file:mr-3 file:rounded file:border-0 file:px-3 file:py-2 file:text-sm"
+            style={{ color: "var(--text-muted)" }}
           />
           {file && (
-            <p className="mt-1 text-xs text-gray-500">{file.name} ({(file.size / 1024).toFixed(0)} КБ)</p>
+            <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>{file.name} ({(file.size / 1024).toFixed(0)} КБ)</p>
           )}
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
             PDF, фото или скриншот — загрузите как есть
           </p>
         </div>
       </div>
 
       <div>
-        <label className={labelClass}>Теги (через запятую)</label>
+        <label className={labelClass} style={labelStyle}>Теги (через запятую)</label>
         <input
           value={tags}
           onChange={(e) => setTags(e.target.value)}
           placeholder="онкология, контроль, ежемесячный"
           className={inputClass}
+          style={inputStyle}
         />
       </div>
 
       <div>
-        <label className={labelClass}>Заметка</label>
+        <label className={labelClass} style={labelStyle}>Заметка</label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
           placeholder="Комментарий к документу..."
           className={inputClass}
+          style={inputStyle}
         />
       </div>
 
@@ -245,12 +257,13 @@ export function DocumentForm() {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className="rounded-xl bg-accent px-6 py-2.5 text-sm font-medium hover:brightness-90 disabled:opacity-50"
+          style={{ color: "var(--bg-primary)" }}
         >
           {saving ? "Сохранение..." : "Сохранить документ"}
         </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {saved && <span className="text-sm text-accent">Сохранено</span>}
+        {error && <span className="text-sm" style={{ color: "var(--amber)" }}>{error}</span>}
       </div>
     </form>
   );

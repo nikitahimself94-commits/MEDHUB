@@ -76,19 +76,20 @@ export function ShareLinkManager({ activeLink }: Props) {
 
   return (
     <div className="rounded-xl card p-4">
-      <h3 className="text-sm font-semibold text-gray-900">Ссылка для врача</h3>
-      <p className="mt-1 text-xs text-gray-500">
+      <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Ссылка для врача</h3>
+      <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
         Создайте временную read-only ссылку, чтобы врач мог видеть вашу сводку без входа в MedHUB.
       </p>
 
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-xs" style={{ color: "var(--amber)" }}>{error}</p>}
 
       {!link && (
         <button
           type="button"
           onClick={handleCreate}
           disabled={loading}
-          className="mt-3 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className="mt-3 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium hover:brightness-90 disabled:opacity-50"
+          style={{ color: "var(--bg-primary)" }}
         >
           {loading ? "Создание..." : "Создать ссылку"}
         </button>
@@ -96,27 +97,29 @@ export function ShareLinkManager({ activeLink }: Props) {
 
       {link && (
         <div className="mt-3">
-          <div className="flex items-center gap-2 rounded bg-gray-50 px-3 py-2">
-            <code className="flex-1 truncate text-xs text-gray-700">
+          <div className="flex items-center gap-2 rounded px-3 py-2" style={{ backgroundColor: "var(--bg-surface-hover)" }}>
+            <code className="flex-1 truncate text-xs" style={{ color: "var(--text-muted)" }}>
               {shareUrl}
             </code>
             <button
               type="button"
               onClick={handleCopy}
-              className="shrink-0 rounded border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-white"
+              className="shrink-0 rounded px-2.5 py-1 text-xs font-medium hover:brightness-110"
+              style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
             >
               {copied ? "Скопировано!" : "Копировать"}
             </button>
           </div>
           <div className="mt-2 flex items-center justify-between">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               Действует до {new Date(link.expires_at).toLocaleDateString("ru-RU")}
             </p>
             <button
               type="button"
               onClick={handleRevoke}
               disabled={loading}
-              className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+              className="text-xs disabled:opacity-50"
+              style={{ color: "var(--amber)" }}
             >
               Отозвать ссылку
             </button>

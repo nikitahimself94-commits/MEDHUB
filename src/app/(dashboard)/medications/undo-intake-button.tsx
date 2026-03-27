@@ -29,7 +29,8 @@ export function UndoIntakeButton({
       type="button"
       onClick={handleClick}
       disabled={isPending}
-      className="rounded border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+      className="rounded px-3 py-1 text-sm disabled:opacity-50"
+      style={{ border: "1px solid var(--border)", color: "var(--amber)" }}
     >
       {isPending ? "Отмена..." : "Отменить последнее"}
     </button>

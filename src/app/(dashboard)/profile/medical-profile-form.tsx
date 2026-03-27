@@ -81,19 +81,22 @@ export function MedicalProfileForm({
     }
   }
 
-  const labelClass = "block text-sm font-medium text-gray-700 mb-1";
-  const inputClass = "w-full rounded-xl border border-gray-200 bg-white/60 px-4 py-2.5 text-sm transition-all focus:border-brand-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/10";
+  const labelClass = "block text-sm font-medium mb-1";
+  const labelStyle = { color: "var(--text-muted)" } as const;
+  const inputClass = "w-full rounded-xl px-4 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-accent-muted focus:border-accent";
+  const inputStyle = { backgroundColor: "var(--bg-surface-hover)", border: "1px solid var(--border)", color: "var(--text-primary)" } as const;
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-6 max-w-2xl">
       {/* Группа крови + Резус */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <div>
-          <label className={labelClass}>Группа крови</label>
+          <label className={labelClass} style={labelStyle}>Группа крови</label>
           <select
             value={bloodType}
             onChange={(e) => setBloodType(e.target.value)}
             className={inputClass}
+            style={inputStyle}
           >
             {BLOOD_TYPES.map((bt) => (
               <option key={bt} value={bt}>
@@ -103,11 +106,12 @@ export function MedicalProfileForm({
           </select>
         </div>
         <div>
-          <label className={labelClass}>Резус-фактор</label>
+          <label className={labelClass} style={labelStyle}>Резус-фактор</label>
           <select
             value={rhFactor}
             onChange={(e) => setRhFactor(e.target.value)}
             className={inputClass}
+            style={inputStyle}
           >
             {RH_OPTIONS.map((rh) => (
               <option key={rh} value={rh}>
@@ -120,7 +124,7 @@ export function MedicalProfileForm({
 
       {/* Аллергии */}
       <div>
-        <label className={labelClass}>Аллергии</label>
+        <label className={labelClass} style={labelStyle}>Аллергии</label>
         {allergies.map((allergy, i) => (
           <div key={i} className="mb-2 flex gap-2 items-start">
             <input
@@ -128,17 +132,20 @@ export function MedicalProfileForm({
               value={allergy.name}
               onChange={(e) => updateAllergy(i, "name", e.target.value)}
               className={inputClass}
+              style={inputStyle}
             />
             <input
               placeholder="Реакция"
               value={allergy.reaction}
               onChange={(e) => updateAllergy(i, "reaction", e.target.value)}
               className={inputClass}
+              style={inputStyle}
             />
             <select
               value={allergy.severity}
               onChange={(e) => updateAllergy(i, "severity", e.target.value)}
-              className="rounded-xl border border-gray-200 bg-white/60 px-3 py-2 text-sm transition-all focus:border-brand-600 focus:bg-white focus:outline-none"
+              className="rounded-xl px-3 py-2 text-sm transition-all focus:outline-none"
+              style={{ backgroundColor: "var(--bg-surface-hover)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
             >
               <option value="low">Лёгкая</option>
               <option value="medium">Средняя</option>
@@ -147,7 +154,8 @@ export function MedicalProfileForm({
             <button
               type="button"
               onClick={() => removeAllergy(i)}
-              className="shrink-0 text-red-500 hover:text-red-700 text-sm px-2 py-2"
+              className="shrink-0 text-sm px-2 py-2"
+              style={{ color: "var(--amber)" }}
             >
               Удалить
             </button>
@@ -156,7 +164,7 @@ export function MedicalProfileForm({
         <button
           type="button"
           onClick={addAllergy}
-          className="text-sm text-brand-600 hover:text-brand-800"
+          className="text-sm text-accent hover:brightness-90"
         >
           + Добавить аллергию
         </button>
@@ -164,19 +172,20 @@ export function MedicalProfileForm({
 
       {/* Хронические состояния */}
       <div>
-        <label className={labelClass}>Хронические состояния</label>
+        <label className={labelClass} style={labelStyle}>Хронические состояния</label>
         {chronic.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
             {chronic.map((c, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm"
+                style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }}
               >
                 {c}
                 <button
                   type="button"
                   onClick={() => removeChronic(i)}
-                  className="text-gray-400 hover:text-red-500"
+                  style={{ color: "var(--text-muted)" }}
                 >
                   ×
                 </button>
@@ -196,11 +205,13 @@ export function MedicalProfileForm({
               }
             }}
             className={inputClass}
+            style={inputStyle}
           />
           <button
             type="button"
             onClick={addChronic}
-            className="shrink-0 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 transition-all hover:bg-white/80"
+            className="shrink-0 rounded-xl px-3 py-2 text-sm transition-all hover:brightness-110"
+            style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
           >
             Добавить
           </button>
@@ -209,13 +220,14 @@ export function MedicalProfileForm({
 
       {/* Экстренная информация */}
       <div>
-        <label className={labelClass}>Экстренная информация</label>
+        <label className={labelClass} style={labelStyle}>Экстренная информация</label>
         <textarea
           value={emergencyInfo}
           onChange={(e) => setEmergencyInfo(e.target.value)}
           rows={3}
           placeholder="Контакты, важные замечания для экстренных служб..."
           className={inputClass}
+          style={inputStyle}
         />
       </div>
 
@@ -224,12 +236,13 @@ export function MedicalProfileForm({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className="rounded-xl bg-accent px-6 py-2.5 text-sm font-medium hover:brightness-90 disabled:opacity-50"
+          style={{ color: "var(--bg-primary)" }}
         >
           {saving ? "Сохранение..." : "Сохранить"}
         </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {saved && <span className="text-sm text-accent">Сохранено</span>}
+        {error && <span className="text-sm" style={{ color: "var(--amber)" }}>{error}</span>}
       </div>
     </form>
   );

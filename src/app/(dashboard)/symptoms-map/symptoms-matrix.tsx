@@ -31,9 +31,14 @@ export function SymptomsMatrix({ data14, data30, days14, days30 }: SerializedPro
           onClick={() => setPeriod(14)}
           className={`rounded px-3 py-1.5 text-sm ${
             period === 14
-              ? "bg-brand-600 font-medium text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              ? "bg-accent font-medium text-gray-900"
+              : "hover:brightness-110"
           }`}
+          style={
+            period === 14
+              ? undefined
+              : { backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }
+          }
         >
           14 дней
         </button>
@@ -42,32 +47,41 @@ export function SymptomsMatrix({ data14, data30, days14, days30 }: SerializedPro
           onClick={() => setPeriod(30)}
           className={`rounded px-3 py-1.5 text-sm ${
             period === 30
-              ? "bg-brand-600 font-medium text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              ? "bg-accent font-medium text-gray-900"
+              : "hover:brightness-110"
           }`}
+          style={
+            period === 30
+              ? undefined
+              : { backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }
+          }
         >
           30 дней
         </button>
       </div>
 
       {!hasData && (
-        <p className="py-8 text-center text-sm text-gray-400">
+        <p className="py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
           Нет симптомов за выбранный период
         </p>
       )}
 
       {hasData && (
-        <div className="overflow-x-auto rounded border bg-white">
+        <div className="overflow-x-auto rounded" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="sticky left-0 bg-gray-50 px-3 py-2 text-left text-xs font-medium text-gray-500">
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                <th
+                  className="sticky left-0 px-3 py-2 text-left text-xs font-medium"
+                  style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }}
+                >
                   Симптом
                 </th>
                 {days.map((d) => (
                   <th
                     key={d}
-                    className="px-1.5 py-2 text-center text-xs font-normal text-gray-400"
+                    className="px-1.5 py-2 text-center text-xs font-normal"
+                    style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }}
                   >
                     {formatDay(d)}
                   </th>
@@ -78,8 +92,11 @@ export function SymptomsMatrix({ data14, data30, days14, days30 }: SerializedPro
               {symptoms.map((symptom) => {
                 const daySet = data[symptom];
                 return (
-                  <tr key={symptom} className="border-b last:border-b-0">
-                    <td className="sticky left-0 bg-white px-3 py-2 text-sm font-medium text-gray-700">
+                  <tr key={symptom} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <td
+                      className="sticky left-0 px-3 py-2 text-sm font-medium"
+                      style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-muted)" }}
+                    >
                       {symptom}
                     </td>
                     {days.map((d) => {
@@ -87,9 +104,9 @@ export function SymptomsMatrix({ data14, data30, days14, days30 }: SerializedPro
                       return (
                         <td key={d} className="px-1.5 py-2 text-center">
                           {present ? (
-                            <span className="inline-block h-4 w-4 rounded bg-red-400" />
+                            <span className="inline-block h-4 w-4 rounded bg-amber" />
                           ) : (
-                            <span className="inline-block h-4 w-4 rounded bg-gray-100" />
+                            <span className="inline-block h-4 w-4 rounded" style={{ backgroundColor: "var(--bg-surface-hover)" }} />
                           )}
                         </td>
                       );

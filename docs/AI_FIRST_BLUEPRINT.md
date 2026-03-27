@@ -1,4 +1,8 @@
-# MedHUB AI-First Blueprint
+# [LEGACY] MedHUB AI-First Blueprint
+
+> **LEGACY DOCUMENT — НЕ ИСПОЛЬЗОВАТЬ КАК SOURCE OF TRUTH.**
+> Заменён на `docs/MEDHUB_BRIEF_2026.md` + `docs/MEDHUB_BASELINE_RESET_2026.md` (март 2026).
+> Оставлен как исторический reference. Не удалять — но не принимать решения на основе этого документа.
 
 > Product architecture для следующего этапа. Не ТЗ, не бренд-манифест — конкретный blueprint, по которому ставятся задачи.
 

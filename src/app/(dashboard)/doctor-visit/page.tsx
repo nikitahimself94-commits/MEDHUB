@@ -33,8 +33,8 @@ export default async function DoctorVisitPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold" style={{ color: "#1A2F2B" }}>Врач</h2>
-      <p className="mt-1 text-sm" style={{ color: "#5A8F85" }}>
+      <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Врач</h2>
+      <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
         Подготовьтесь к приёму, посмотрите сводку и передайте врачу всё важное.
       </p>
       <div className="mt-3">
@@ -43,10 +43,10 @@ export default async function DoctorVisitPage() {
 
       {/* === Zone 1: Подготовка к визиту === */}
       <div className="mt-5 rounded-2xl card p-5">
-        <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>
+        <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
           Подготовка к визиту
         </h3>
-        <p className="mt-1 text-sm leading-relaxed" style={{ color: "#5A8F85" }}>
+        <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
           AI-помощник соберёт ваши данные — дневник, показатели, лекарства — и сформирует
           структурированную сводку для врача. Не нужно вспоминать всё самому.
         </p>
@@ -59,11 +59,11 @@ export default async function DoctorVisitPage() {
       {lastPrep ? (
         <div className="mt-4 rounded-2xl card p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>
+            <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
               Сводка для врача
             </h3>
             <div className="flex items-center gap-2">
-              <span className="text-xs" style={{ color: "#8AA8A2" }}>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                 {new Date(lastPrep.created_at).toLocaleString("ru-RU", {
                   day: "2-digit", month: "2-digit",
                   hour: "2-digit", minute: "2-digit",
@@ -77,15 +77,15 @@ export default async function DoctorVisitPage() {
           </div>
           <div
             className="mt-4 pt-3 border-t"
-            style={{ borderColor: "rgba(45,110,106,0.1)" }}
+            style={{ borderColor: "var(--border)" }}
           >
             <Link
               href="/ai-chat"
               className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition hover:shadow-sm"
               style={{
-                backgroundColor: "rgba(45,110,106,0.06)",
-                color: "#2D6E6A",
-                border: "1px solid rgba(45,110,106,0.12)",
+                backgroundColor: "var(--accent-muted)",
+                color: "var(--accent)",
+                border: "1px solid rgba(45,212,191,0.15)",
               }}
             >
               Уточнить, что сказать врачу →
@@ -95,12 +95,12 @@ export default async function DoctorVisitPage() {
       ) : (
         <div
           className="mt-4 rounded-2xl px-6 py-8 text-center"
-          style={{ backgroundColor: "rgba(45,110,106,0.03)", border: "1px dashed #BFC8C5" }}
+          style={{ backgroundColor: "var(--accent-muted)", border: "1px dashed var(--border)" }}
         >
-          <p className="text-sm font-medium" style={{ color: "#2D5A54" }}>
+          <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
             Сводка ещё не готова
           </p>
-          <p className="mt-1 text-xs" style={{ color: "#8AA8A2" }}>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
             Нажмите «Подготовить сводку» выше — AI соберёт ваши данные и сформирует выжимку для приёма
           </p>
         </div>
@@ -108,10 +108,10 @@ export default async function DoctorVisitPage() {
 
       {/* === Zone 3: Передача врачу === */}
       <div className="mt-4 rounded-2xl card p-5">
-        <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>
+        <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
           Передать врачу
         </h3>
-        <p className="mt-1 text-sm leading-relaxed" style={{ color: "#5A8F85" }}>
+        <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
           Создайте временную ссылку — врач увидит сводку в режиме чтения,
           без доступа к вашим остальным данным. Ссылка действует ограниченное время.
         </p>
@@ -143,31 +143,31 @@ function PrepContent({ markdown }: { markdown: string }) {
 
     if (trimmed.startsWith("# ") && !trimmed.startsWith("## ")) {
       elements.push(
-        <h2 key={i} className="mt-5 mb-2 text-lg font-bold text-brand-900">
+        <h2 key={i} className="mt-5 mb-2 text-lg font-bold" style={{ color: "var(--text-primary)" }}>
           {formatInline(trimmed.replace(/^#\s+/, "").replace(/\s*📋|⚠️|📝|💊|📊|❓|🩺/g, "").trim())}
         </h2>
       );
     } else if (trimmed.startsWith("## ")) {
       elements.push(
-        <h3 key={i} className="mt-5 mb-2 text-base font-semibold text-brand-900">
+        <h3 key={i} className="mt-5 mb-2 text-base font-semibold" style={{ color: "var(--text-primary)" }}>
           {formatInline(trimmed.slice(3).replace(/\s*📋|⚠️|📝|💊|📊|❓|🩺/g, "").trim())}
         </h3>
       );
     } else if (trimmed.startsWith("### ")) {
       elements.push(
-        <h4 key={i} className="mt-4 mb-1 text-sm font-semibold text-brand-800">
+        <h4 key={i} className="mt-4 mb-1 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           {formatInline(trimmed.slice(4).replace(/\s*📋|⚠️|📝|💊|📊|❓|🩺/g, "").trim())}
         </h4>
       );
     } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
       elements.push(
-        <li key={i} className="ml-5 list-disc text-sm text-gray-700">
+        <li key={i} className="ml-5 list-disc text-sm" style={{ color: "var(--text-muted)" }}>
           {formatInline(trimmed.slice(2))}
         </li>
       );
     } else if (/^\d+[\.\)]\s/.test(trimmed)) {
       elements.push(
-        <li key={i} className="ml-5 list-decimal text-sm text-gray-700">
+        <li key={i} className="ml-5 list-decimal text-sm" style={{ color: "var(--text-muted)" }}>
           {formatInline(trimmed.replace(/^\d+[\.\)]\s/, ""))}
         </li>
       );
@@ -175,9 +175,9 @@ function PrepContent({ markdown }: { markdown: string }) {
       if (/^\|[\s\-:]+\|/.test(trimmed) && !trimmed.match(/[a-zA-Zа-яА-Я0-9]/)) continue;
       const cells = trimmed.split("|").filter(Boolean).map(c => c.trim());
       elements.push(
-        <div key={i} className="flex gap-3 border-b border-gray-100 py-1 text-sm overflow-x-auto">
+        <div key={i} className="flex gap-3 border-b py-1 text-sm overflow-x-auto" style={{ borderColor: "var(--border)" }}>
           {cells.map((cell, ci) => (
-            <span key={ci} className={ci === 0 ? "font-medium text-gray-800 shrink-0 min-w-[100px] sm:min-w-[140px]" : "text-gray-600"}>
+            <span key={ci} className={ci === 0 ? "font-medium shrink-0 min-w-[100px] sm:min-w-[140px]" : ""} style={{ color: ci === 0 ? "var(--text-primary)" : "var(--text-muted)" }}>
               {formatInline(cell)}
             </span>
           ))}
@@ -187,7 +187,7 @@ function PrepContent({ markdown }: { markdown: string }) {
       elements.push(<div key={i} className="h-2" />);
     } else {
       elements.push(
-        <p key={i} className="text-sm text-gray-700 leading-relaxed">
+        <p key={i} className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
           {formatInline(trimmed)}
         </p>
       );

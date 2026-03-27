@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/(auth)/login/actions";
-import { DashboardNav } from "./dashboard-nav";
+import { BottomNav } from "./bottom-nav";
 import { TimezoneSetter } from "@/components/timezone-setter";
 
 export default async function DashboardLayout({
@@ -26,23 +26,23 @@ export default async function DashboardLayout({
     return (
       <div
         className="flex min-h-screen items-center justify-center"
-        style={{ background: "#EFF3F2" }}
+        style={{ background: "var(--bg-primary)" }}
       >
         <div className="text-center">
           <h1
             className="text-2xl font-bold tracking-[0.15em]"
-            style={{ color: "#1A2F2B" }}
+            style={{ color: "var(--text-primary)" }}
           >
             MEDHUB
           </h1>
-          <p className="mt-3 text-sm" style={{ color: "#5A7A74" }}>
+          <p className="mt-3 text-sm" style={{ color: "var(--text-muted)" }}>
             Профиль не привязан к пациенту. Обратитесь к администратору.
           </p>
           <form action={logout} className="mt-4">
             <button
               type="submit"
               className="text-sm font-medium"
-              style={{ color: "#2D6E6A" }}
+              style={{ color: "var(--accent)" }}
             >
               Выйти
             </button>
@@ -53,33 +53,25 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "#C5CECA" }}>
+    <div className="min-h-screen" style={{ background: "var(--bg-primary)" }}>
       <TimezoneSetter />
-      <header style={{ backgroundColor: "#2D6E6A" }} className="px-4 sm:px-6 pt-3 sm:pt-4 pb-2 sm:pb-3">
+      <header className="px-4 sm:px-6 pt-2.5 pb-2" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <h1 className="text-base sm:text-lg font-bold tracking-[0.15em] text-white">
+          <h1
+            className="text-sm font-bold tracking-[0.15em]"
+            style={{ color: "var(--text-primary)" }}
+          >
             MEDHUB
           </h1>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <span className="hidden sm:inline text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
+          <div className="flex items-center gap-3">
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
               {profile.display_name || user.email}
-              {profile.role && (
-                <span
-                  className="ml-2 rounded-full px-2.5 py-0.5 text-xs"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.12)",
-                    color: "rgba(255,255,255,0.8)",
-                  }}
-                >
-                  {profile.role === "patient" ? "Пациент" : "Опекун"}
-                </span>
-              )}
             </span>
             <form action={logout}>
               <button
                 type="submit"
-                className="text-sm transition-colors"
-                style={{ color: "rgba(255,255,255,0.5)" }}
+                className="text-xs transition-colors"
+                style={{ color: "var(--text-muted)", opacity: 0.6 }}
               >
                 Выйти
               </button>
@@ -87,10 +79,10 @@ export default async function DashboardLayout({
           </div>
         </div>
       </header>
-      <DashboardNav />
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-5 sm:py-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 sm:py-6 pb-24">
         {children}
       </div>
+      <BottomNav />
     </div>
   );
 }

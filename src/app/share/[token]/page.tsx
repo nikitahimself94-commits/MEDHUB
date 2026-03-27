@@ -20,9 +20,9 @@ export default async function SharePage({
   if (link.status !== "active") {
     return (
       <Page>
-        <div className="rounded border border-red-200 bg-red-50 p-6 text-center">
-          <h2 className="text-lg font-semibold text-red-800">Ссылка отозвана</h2>
-          <p className="mt-2 text-sm text-red-600">
+        <div className="rounded p-6 text-center" style={{ border: "1px solid rgba(245,158,11,0.15)", backgroundColor: "rgba(245,158,11,0.1)" }}>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--amber)" }}>Ссылка отозвана</h2>
+          <p className="mt-2 text-sm" style={{ color: "var(--amber)" }}>
             Пациент отозвал доступ к этой сводке.
           </p>
         </div>
@@ -33,9 +33,9 @@ export default async function SharePage({
   if (new Date(link.expires_at) < new Date()) {
     return (
       <Page>
-        <div className="rounded border border-yellow-200 bg-yellow-50 p-6 text-center">
-          <h2 className="text-lg font-semibold text-yellow-800">Ссылка истекла</h2>
-          <p className="mt-2 text-sm text-yellow-600">
+        <div className="rounded p-6 text-center" style={{ border: "1px solid rgba(245,158,11,0.15)", backgroundColor: "rgba(245,158,11,0.1)" }}>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--amber)" }}>Ссылка истекла</h2>
+          <p className="mt-2 text-sm" style={{ color: "var(--amber)" }}>
             Срок действия ссылки истёк. Попросите пациента создать новую.
           </p>
         </div>
@@ -100,25 +100,25 @@ export default async function SharePage({
 
   return (
     <Page>
-      <div className="rounded border bg-white p-6">
+      <div className="rounded p-6" style={{ border: "1px solid var(--border)", backgroundColor: "var(--bg-surface)" }}>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{displayName}</h2>
-            <p className="text-sm text-gray-500">Медицинская сводка MedHUB</p>
-            <p className="text-xs text-gray-400">
+            <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{displayName}</h2>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Медицинская сводка MedHUB</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               Данные на {new Date().toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" })}
             </p>
           </div>
-          <span className="rounded bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
+          <span className="rounded px-3 py-1 text-xs font-medium" style={{ backgroundColor: "var(--accent-muted)", color: "var(--accent)" }}>
             Только для просмотра
           </span>
         </div>
 
         {/* Medical profile */}
         {medProfile && (
-          <div className="mt-4 rounded bg-gray-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Медкарта</p>
-            <div className="mt-2 space-y-1 text-sm text-gray-700">
+          <div className="mt-4 rounded p-3" style={{ backgroundColor: "var(--bg-surface-hover)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Медкарта</p>
+            <div className="mt-2 space-y-1 text-sm" style={{ color: "var(--text-muted)" }}>
               {medProfile.blood_type && (
                 <p>Группа крови: {medProfile.blood_type}{medProfile.rh_factor || ""}</p>
               )}
@@ -137,19 +137,19 @@ export default async function SharePage({
 
         {/* Active medications */}
         <div className="mt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
             Активные лекарства ({activeMeds.length})
           </p>
           {activeMeds.length === 0 && (
-            <p className="mt-2 text-sm text-gray-400">Нет активных препаратов</p>
+            <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>Нет активных препаратов</p>
           )}
           {activeMeds.length > 0 && (
             <div className="mt-2 space-y-1">
               {activeMeds.map((m: { name: string; dosage: string; schedule: string }, i: number) => (
                 <div key={i} className="flex items-baseline gap-2 text-sm">
-                  <span className="font-medium text-gray-900">{m.name}</span>
-                  <span className="text-gray-500">{m.dosage}</span>
-                  {m.schedule && <span className="text-gray-400">({m.schedule})</span>}
+                  <span className="font-medium" style={{ color: "var(--text-primary)" }}>{m.name}</span>
+                  <span style={{ color: "var(--text-muted)" }}>{m.dosage}</span>
+                  {m.schedule && <span style={{ color: "var(--text-muted)" }}>({m.schedule})</span>}
                 </div>
               ))}
             </div>
@@ -158,21 +158,21 @@ export default async function SharePage({
 
         {/* Recent vitals */}
         <div className="mt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
             Последние показатели
           </p>
           {recentVitals.length === 0 && (
-            <p className="mt-2 text-sm text-gray-400">Нет данных</p>
+            <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>Нет данных</p>
           )}
           {recentVitals.length > 0 && (
             <div className="mt-2 space-y-1">
               {recentVitals.map((v: { vital_type: string; value: string; unit: string; measured_at: string }, i: number) => (
                 <div key={i} className="flex items-baseline justify-between text-sm">
-                  <span className="text-gray-700">
-                    <span className="font-medium">{vitalLabels[v.vital_type] || v.vital_type}:</span>{" "}
+                  <span style={{ color: "var(--text-muted)" }}>
+                    <span className="font-medium" style={{ color: "var(--text-primary)" }}>{vitalLabels[v.vital_type] || v.vital_type}:</span>{" "}
                     {v.value} {v.unit}
                   </span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                     {new Date(v.measured_at).toLocaleDateString("ru-RU")}
                   </span>
                 </div>
@@ -185,21 +185,21 @@ export default async function SharePage({
         {prep && (
           <div className="mt-4">
             <div className="flex items-baseline justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
                 AI-сводка для визита
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                 {new Date(prep.created_at).toLocaleDateString("ru-RU")}
               </p>
             </div>
-            <div className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
+            <div className="mt-2 whitespace-pre-wrap text-sm" style={{ color: "var(--text-muted)" }}>
               {prep.summary}
             </div>
           </div>
         )}
       </div>
 
-      <p className="mt-4 text-center text-xs text-gray-400">
+      <p className="mt-4 text-center text-xs" style={{ color: "var(--text-muted)" }}>
         Эта страница создана пациентом в MedHUB для передачи данных врачу.
         Ссылка действительна до {new Date(link.expires_at).toLocaleDateString("ru-RU")}.
       </p>
@@ -209,11 +209,11 @@ export default async function SharePage({
 
 function Page({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen px-4 py-8" style={{ background: "#EFF3F2" }}>
+    <div className="min-h-screen px-4 py-8" style={{ background: "var(--bg-primary)" }}>
       <div className="mx-auto max-w-2xl">
         <h1
           className="mb-6 text-center text-lg font-bold tracking-[0.15em]"
-          style={{ color: "#2D6E6A" }}
+          style={{ color: "var(--accent)" }}
         >
           MEDHUB
         </h1>

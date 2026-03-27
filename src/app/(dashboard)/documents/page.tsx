@@ -50,7 +50,7 @@ export default async function DocumentsPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold" style={{ color: "#1A2F2B" }}>Документы</h2>
+      <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Документы</h2>
       <div className="mt-3">
         <AiUsageStatus used={usageCount} />
       </div>
@@ -58,18 +58,18 @@ export default async function DocumentsPage() {
       {/* Agent companion block */}
       <div
         className="mt-4 rounded-2xl px-5 py-4"
-        style={{ backgroundColor: "rgba(45,110,106,0.05)" }}
+        style={{ backgroundColor: "var(--accent-muted)" }}
       >
-        <p className="text-[14px] font-medium leading-snug" style={{ color: "#1A2F2B" }}>
+        <p className="text-[14px] font-medium leading-snug" style={{ color: "var(--text-primary)" }}>
           {companion.line}
         </p>
         {companion.supporting && (
-          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "#5A8F85" }}>
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
             {companion.supporting}
           </p>
         )}
         {!isEmpty && (
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px]" style={{ color: "#8AA8A2" }}>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
             <span>Документов: {documents.length}</span>
             <span>Разобрано: {parsedCount}</span>
             <span>Второе мнение: {opinionCount}</span>

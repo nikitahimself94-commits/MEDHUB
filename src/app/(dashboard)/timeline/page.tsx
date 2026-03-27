@@ -27,7 +27,7 @@ export default async function TimelinePage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Хронология</h2>
+      <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Хронология</h2>
       <div className="mt-3">
         <ModuleHelp
           title="Хронология медицинских событий"
@@ -42,7 +42,7 @@ export default async function TimelinePage() {
 
       <div className="mt-8">
         {events.length === 0 && (
-          <p className="text-sm text-gray-500">Событий пока нет</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Событий пока нет</p>
         )}
 
         {events.length > 0 && (
@@ -70,22 +70,22 @@ function EventCard({ event }: { event: TimelineEvent }) {
     <div className="rounded-xl card p-4">
       <div className="flex items-baseline justify-between">
         <div className="flex items-baseline gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
             {label}
           </span>
-          <span className="text-lg font-medium text-gray-900">
+          <span className="text-lg font-medium" style={{ color: "var(--text-primary)" }}>
             {event.title}
           </span>
         </div>
         <DeleteEventButton eventId={event.id} />
       </div>
 
-      <div className="mt-1 text-xs text-gray-400">
+      <div className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
         {formattedDate}
       </div>
 
       {event.notes && (
-        <p className="mt-2 text-sm text-gray-700">{event.notes}</p>
+        <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>{event.notes}</p>
       )}
     </div>
   );

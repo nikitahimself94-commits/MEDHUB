@@ -43,10 +43,10 @@ const GROUPS: RecordGroup[] = [
 export default function RecordsPage() {
   return (
     <div>
-      <h2 className="text-2xl font-bold" style={{ color: "#1A2F2B" }}>
+      <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
         Записи
       </h2>
-      <p className="mt-1 text-sm leading-snug" style={{ color: "#5A8F85" }}>
+      <p className="mt-1 text-sm leading-snug" style={{ color: "var(--text-muted)" }}>
         Всё, что вы фиксируете, становится контекстом для AI-помощника
       </p>
 
@@ -54,10 +54,10 @@ export default function RecordsPage() {
         {GROUPS.map((group) => (
           <div key={group.title}>
             <div className="mb-2">
-              <h3 className="text-sm font-bold" style={{ color: "#1A2F2B" }}>
+              <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
                 {group.title}
               </h3>
-              <p className="mt-0.5 text-xs" style={{ color: "#8AA8A2" }}>
+              <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
                 {group.hint}
               </p>
             </div>
@@ -68,10 +68,10 @@ export default function RecordsPage() {
                   href={item.href}
                   className="rounded-xl card px-4 py-3 transition hover:shadow-md active:scale-[0.98]"
                 >
-                  <p className="text-[15px] font-semibold" style={{ color: "#1A2F2B" }}>
+                  <p className="text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>
                     {item.label}
                   </p>
-                  <p className="mt-0.5 text-sm leading-snug" style={{ color: "#5A8F85" }}>
+                  <p className="mt-0.5 text-sm leading-snug" style={{ color: "var(--text-muted)" }}>
                     {item.desc}
                   </p>
                 </Link>

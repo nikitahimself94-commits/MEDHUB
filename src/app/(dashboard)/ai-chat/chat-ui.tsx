@@ -79,10 +79,10 @@ export function ChatUI({ initialMessages, layers = [] }: { initialMessages: Mess
       <div className="flex-1 overflow-y-auto rounded-xl card p-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 px-4">
-            <p className="text-[15px] font-semibold" style={{ color: "#1A2F2B" }}>
+            <p className="text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>
               Я уже вижу ваши данные и готов разбираться
             </p>
-            <p className="mt-1.5 text-sm text-center max-w-sm" style={{ color: "#5A8F85" }}>
+            <p className="mt-1.5 text-sm text-center max-w-sm" style={{ color: "var(--text-muted)" }}>
               Спросите о состоянии, динамике, лекарствах — или выберите один из вопросов ниже
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2 max-w-md">
@@ -100,9 +100,9 @@ export function ChatUI({ initialMessages, layers = [] }: { initialMessages: Mess
                   onClick={() => { setInput(q); }}
                   className={`rounded-full px-3.5 py-2 text-xs font-medium transition hover:shadow-sm${idx >= 4 ? " hidden sm:inline-flex" : ""}`}
                   style={{
-                    backgroundColor: "rgba(45,110,106,0.06)",
-                    color: "#2D6E6A",
-                    border: "1px solid rgba(45,110,106,0.12)",
+                    backgroundColor: "var(--accent-muted)",
+                    color: "var(--accent)",
+                    border: "1px solid rgba(45,212,191,0.15)",
                   }}
                 >
                   {q}
@@ -121,9 +121,14 @@ export function ChatUI({ initialMessages, layers = [] }: { initialMessages: Mess
               <div
                 className={`max-w-[80%] rounded-lg px-4 py-2 text-sm ${
                   msg.role === "user"
-                    ? "bg-brand-600 text-white"
-                    : "bg-gray-100 text-gray-800"
+                    ? "bg-accent"
+                    : ""
                 }`}
+                style={
+                  msg.role === "user"
+                    ? { color: "var(--bg-primary)" }
+                    : { backgroundColor: "var(--bg-surface-hover)", color: "var(--text-primary)" }
+                }
               >
                 <div className="space-y-2">
                   {msg.content.split(/\n\n+/).map((paragraph, pi) => (
@@ -131,9 +136,8 @@ export function ChatUI({ initialMessages, layers = [] }: { initialMessages: Mess
                   ))}
                 </div>
                 <p
-                  className={`mt-1 text-xs ${
-                    msg.role === "user" ? "text-brand-200" : "text-gray-400"
-                  }`}
+                  className="mt-1 text-xs"
+                  style={{ color: msg.role === "user" ? "var(--bg-surface)" : "var(--text-muted)" }}
                 >
                   {new Date(msg.created_at).toLocaleTimeString("ru-RU", {
                     hour: "2-digit",
@@ -146,7 +150,7 @@ export function ChatUI({ initialMessages, layers = [] }: { initialMessages: Mess
 
           {sending && (
             <div className="flex justify-start">
-              <div className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-500">
+              <div className="rounded-lg px-4 py-2 text-sm" style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }}>
                 Думаю...
               </div>
             </div>
@@ -157,13 +161,13 @@ export function ChatUI({ initialMessages, layers = [] }: { initialMessages: Mess
       </div>
 
       {error && (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
+        <p className="mt-2 text-sm" style={{ color: "var(--amber)" }}>{error}</p>
       )}
 
       {(() => {
         const hint = getEvidenceHint(layers);
         return hint ? (
-          <p className="mt-2 text-[11px] px-1" style={{ color: "#8AA8A2" }}>{hint}</p>
+          <p className="mt-2 text-[11px] px-1" style={{ color: "var(--text-muted)" }}>{hint}</p>
         ) : null;
       })()}
 
@@ -173,12 +177,14 @@ export function ChatUI({ initialMessages, layers = [] }: { initialMessages: Mess
           onChange={(e) => setInput(e.target.value)}
           placeholder="Задайте вопрос..."
           disabled={sending}
-          className="flex-1 rounded-xl border border-gray-200 bg-white/60 px-4 py-2.5 text-sm transition-all focus:border-brand-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/10 disabled:opacity-50"
+          className="flex-1 rounded-xl px-4 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-accent-muted focus:border-accent disabled:opacity-50"
+          style={{ backgroundColor: "var(--bg-surface-hover)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
         />
         <button
           type="submit"
           disabled={sending || !input.trim()}
-          className="shrink-0 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className="shrink-0 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium hover:brightness-90 disabled:opacity-50"
+          style={{ color: "var(--bg-primary)" }}
         >
           {sending ? "..." : <><span className="hidden sm:inline">Отправить</span><span className="sm:hidden">&rarr;</span></>}
         </button>

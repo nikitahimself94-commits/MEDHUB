@@ -12,6 +12,9 @@ const EVENT_TYPES = [
   { value: "other", label: "Другое" },
 ] as const;
 
+const labelStyle = { color: "var(--text-muted)" };
+const inputStyle = { backgroundColor: "var(--bg-surface-hover)", border: "1px solid var(--border)", color: "var(--text-primary)" };
+
 export function TimelineForm() {
   const [open, setOpen] = useState(false);
   const [eventType, setEventType] = useState<string>(EVENT_TYPES[0].value);
@@ -57,9 +60,9 @@ export function TimelineForm() {
     }
   }
 
-  const labelClass = "block text-sm font-medium text-gray-700 mb-1";
+  const labelClass = "block text-sm font-medium mb-1";
   const inputClass =
-    "w-full rounded-xl border border-gray-200 bg-white/60 px-4 py-2.5 text-sm transition-all focus:border-brand-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/10";
+    "w-full rounded-xl px-4 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-accent-muted focus:border-accent";
 
   if (!open) {
     return (
@@ -67,11 +70,11 @@ export function TimelineForm() {
         <button
           type="button"
           onClick={() => { setSaved(false); setError(""); setOpen(true); }}
-          className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+          className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-gray-900 hover:brightness-90"
         >
           + Добавить событие
         </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
+        {saved && <span className="text-sm text-accent">Сохранено</span>}
       </div>
     );
   }
@@ -79,22 +82,23 @@ export function TimelineForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-xl card p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">Новое событие</h3>
+        <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Новое событие</h3>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm" style={{ color: "var(--text-muted)" }}
         >
           Отмена
         </button>
       </div>
 
       <div>
-        <label className={labelClass}>Тип события</label>
+        <label className={labelClass} style={labelStyle}>Тип события</label>
         <select
           value={eventType}
           onChange={(e) => setEventType(e.target.value)}
           className={inputClass}
+          style={inputStyle}
         >
           {EVENT_TYPES.map((t) => (
             <option key={t.value} value={t.value}>
@@ -105,33 +109,36 @@ export function TimelineForm() {
       </div>
 
       <div>
-        <label className={labelClass}>Дата *</label>
+        <label className={labelClass} style={labelStyle}>Дата *</label>
         <input
           type="date"
           value={eventDate}
           onChange={(e) => setEventDate(e.target.value)}
           className={inputClass}
+          style={inputStyle}
         />
       </div>
 
       <div>
-        <label className={labelClass}>Заголовок *</label>
+        <label className={labelClass} style={labelStyle}>Заголовок *</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Приём у терапевта, ОАК, МРТ..."
           className={inputClass}
+          style={inputStyle}
         />
       </div>
 
       <div>
-        <label className={labelClass}>Заметка</label>
+        <label className={labelClass} style={labelStyle}>Заметка</label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
           placeholder="Подробности, результаты..."
           className={inputClass}
+          style={inputStyle}
         />
       </div>
 
@@ -139,12 +146,12 @@ export function TimelineForm() {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className="rounded-xl bg-accent px-6 py-2.5 text-sm font-medium text-gray-900 hover:brightness-90 disabled:opacity-50"
         >
           {saving ? "Сохранение..." : "Сохранить"}
         </button>
-        {saved && <span className="text-sm text-teal-600">Сохранено</span>}
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {saved && <span className="text-sm text-accent">Сохранено</span>}
+        {error && <span className="text-sm" style={{ color: "var(--amber)" }}>{error}</span>}
       </div>
     </form>
   );
