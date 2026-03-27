@@ -265,6 +265,12 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
+
+          {mco.last_used_templates.length > 0 && (
+            <p className="mt-2 text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.45 }}>
+              <span className="font-medium">Последний шаблон:</span> {mco.last_used_templates[0]}
+            </p>
+          )}
         </div>
       </section>
 
