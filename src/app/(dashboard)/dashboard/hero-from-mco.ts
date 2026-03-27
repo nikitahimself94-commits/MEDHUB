@@ -72,12 +72,25 @@ export function heroObservation(mco: McoSnapshot): string {
     return entryModeObservation(mco.entry_mode);
   }
 
+  // --- v2: prefer MCO patterns/questions when available ---
+  const pattern = mco.recent_patterns?.[0];
+  const question = mco.open_questions?.[0];
+
   // Has data — describe completeness state
   if (filledCount === 0) {
+    if (question) {
+      return `Сейчас главный пробел — ${question.toLowerCase()}.`;
+    }
     return "Мне нужна первая точка данных — запись самочувствия, показатель или документ.";
   }
 
   if (filledCount <= 2) {
+    if (pattern && question) {
+      return `${pattern} — от этого уже можно отталкиваться. Но ${question.toLowerCase()}.`;
+    }
+    if (pattern) {
+      return `${pattern} — от этого уже можно отталкиваться.`;
+    }
     const missing = missingLayers(c);
     if (missing.length > 0) {
       return `Часть данных уже есть, но ${missing.slice(0, 2).join(" и ")} пока пусто. Каждый новый слой делает мои выводы точнее.`;
@@ -94,6 +107,9 @@ export function heroObservation(mco: McoSnapshot): string {
     const pct = Math.round((filledCount / totalLayers) * 100);
     if (pct >= 80) {
       return "Картина почти полная. Данные поступают — ничего критичного не вижу.";
+    }
+    if (pattern) {
+      return `${pattern}. Общая картина складывается.`;
     }
     return "Данные есть из нескольких источников. Общая картина складывается.";
   }
@@ -172,7 +188,12 @@ const ACTION_MAP: Record<PriorityActionKey, HeroCta> = {
 };
 
 export function heroNextStep(mco: McoSnapshot): HeroCta {
-  return ACTION_MAP[mco.priority_action];
+  const base = ACTION_MAP[mco.priority_action];
+  const nudge = mco.pending_nudges?.[0];
+  if (nudge) {
+    return { ...base, sub: nudge };
+  }
+  return base;
 }
 
 // --- Evidence items ---
