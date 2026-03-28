@@ -6,7 +6,7 @@ import { paraphraseHeroOpening } from "@/lib/haiku-paraphrase";
 import { OnboardingGate } from "./onboarding-gate";
 import { FirstArrivalOverlay } from "./first-arrival-overlay";
 import { ReviewReset } from "./review-reset";
-import { heroOpening, heroObservation, heroNextStep, heroEvidence, heroUnlockMessage, heroMapHelper } from "./hero-from-mco";
+import { heroOpening, heroObservation, heroNextStep, heroUnlockMessage, heroMapHelper } from "./hero-from-mco";
 import { moduleStatuses } from "./module-statuses";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -68,7 +68,6 @@ export default async function DashboardPage() {
   const agentOpening = paraphrased ?? baseOpening;
   const agentObservation = heroObservation(mco);
   const agentNextStep = heroNextStep(mco);
-  const evidence = heroEvidence(mco);
   const unlockMessage = heroUnlockMessage(mco);
   const mapHelper = heroMapHelper(mco);
   if (rotation.isDirty()) {
@@ -158,60 +157,6 @@ export default async function DashboardPage() {
     },
   ];
 
-  // --- Correlations ---
-  const corKeyToNode: Record<string, string> = {
-    diary: "wellbeing", emotions: "wellbeing",
-    vitals: "vitals", documents: "documents",
-    medications: "medications",
-  };
-  const relatedNodes = new Set<string>();
-  const shownCorrelations = mco.correlations.slice(0, 2);
-  for (const cor of shownCorrelations) {
-    const fromNode = corKeyToNode[cor.from];
-    const toNode = corKeyToNode[cor.to];
-    if (fromNode) relatedNodes.add(fromNode);
-    if (toNode) relatedNodes.add(toNode);
-  }
-
-  // Node positions — compact, centered constellation
-  const nodePos: Record<string, [number, number]> = {
-    wellbeing:    [50, 18],
-    vitals:       [78, 34],
-    documents:    [22, 46],
-    medications:  [78, 60],
-    lifestyle:    [50, 76],
-  };
-  const nodeCenters = nodePos;
-
-  // Only hub→satellite structural lines — no cross-links between satellites
-  const baseEdges: Array<[string, string]> = [
-    ["wellbeing", "vitals"],
-    ["wellbeing", "documents"],
-    ["wellbeing", "medications"],
-    ["wellbeing", "lifestyle"],
-  ];
-  const baseLines = baseEdges.map(([a, b]) => ({
-    x1: nodeCenters[a][0], y1: nodeCenters[a][1],
-    x2: nodeCenters[b][0], y2: nodeCenters[b][1],
-  }));
-
-  // Active correlations — expressed as strengthened hub-lines, not separate web
-  const activeEdgeSet = new Set<string>();
-  for (const cor of shownCorrelations) {
-    const fromNode = corKeyToNode[cor.from];
-    const toNode = corKeyToNode[cor.to];
-    // Only strengthen edges that already exist (hub→satellite)
-    for (const [a, b] of baseEdges) {
-      if ((a === fromNode && b === toNode) || (a === toNode && b === fromNode) ||
-          (a === fromNode || b === fromNode) || (a === toNode || b === toNode)) {
-        // strengthen if either end matches a correlated module
-        if ((fromNode === a || fromNode === b) && (toNode === a || toNode === b)) {
-          activeEdgeSet.add(`${a}-${b}`);
-        }
-      }
-    }
-  }
-
   const stateStyles: Record<MapNode["state"], { bg: string; border: string; glow: string; iconColor: string; textColor: string; statusColor: string }> = {
     empty: {
       bg: "rgba(255,255,255,0.03)",
@@ -247,250 +192,165 @@ export default async function DashboardPage() {
     },
   };
 
-  function resolveGlow(base: string, isRelated: boolean): string {
-    if (!isRelated) return base;
-    const relGlow = "0 0 40px rgba(45,212,191,0.18)";
-    if (base === "none") return relGlow;
-    return `${base}, ${relGlow}`;
-  }
+  const hub = nodes.find((n) => n.key === "wellbeing")!;
+  const hubS = stateStyles[hub.state];
+  const symptomsNode = modules.find((m) => m.key === "symptoms");
+  const satellites = nodes.filter((n) => n.key !== "wellbeing" && n.key !== "lifestyle");
+  const bridge = nodes.find((n) => n.key === "lifestyle")!;
+  const bridgeS = stateStyles[bridge.state];
+
+  // Latest diary entry for state panel
+  const lastDiary = (diary ?? [])[0] as { created_at: string; wellbeing_score: number; symptoms: string[] } | undefined;
+  const lastVital = (vitals ?? [])[0] as { vital_type: string; value: string; unit: string } | undefined;
 
   return (
     <div className="-mx-4 sm:-mx-6 -mt-4 sm:-mt-6">
       {process.env.NODE_ENV !== "production" && <ReviewReset />}
       <FirstArrivalOverlay show={isFirstArrival} />
 
-      {/* ===== AGENT PRESENCE ===== */}
-      <section className="relative overflow-hidden" style={{ backgroundColor: "var(--bg-surface)" }}>
-        <div className="pointer-events-none absolute inset-0" style={{
-          background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(45,212,191,0.06) 0%, transparent 55%)",
-        }} />
+      <div className="px-4 sm:px-5 pt-5 sm:pt-6 pb-5 sm:pb-6 space-y-3">
 
-        <div className="relative px-5 sm:px-8 pt-7 sm:pt-8 pb-3 sm:pb-4">
-          <h1
-            className="text-[22px] sm:text-[28px] lg:text-[32px] font-bold leading-[1.15] tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
+        {/* ===== ROW 1: Agent greeting — single line feel ===== */}
+        <div>
+          <p className="text-[18px] sm:text-[22px] font-bold leading-[1.2]" style={{ color: "var(--text-primary)" }}>
             {agentOpening}
-          </h1>
-
-          <p
-            className="mt-2 text-[14px] sm:text-[15px] leading-[1.5] max-w-lg"
-            style={{ color: "var(--text-muted)" }}
-          >
+          </p>
+          <p className="mt-1 text-[13px] leading-[1.45]" style={{ color: "var(--text-muted)" }}>
             {agentObservation}
           </p>
-
           {unlockMessage && (
-            <p className="mt-2 text-[13px] font-medium" style={{ color: "var(--accent)" }}>
-              {unlockMessage}
-            </p>
-          )}
-
-          {evidence.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {evidence.map((e) => (
-                <Link
-                  key={e.label}
-                  href={e.href}
-                  className="rounded-full px-3 py-1 text-[10px] font-semibold tracking-wide transition-all hover:scale-105"
-                  style={{
-                    backgroundColor: "rgba(45,212,191,0.08)",
-                    color: "var(--accent)",
-                    border: "1px solid rgba(45,212,191,0.15)",
-                  }}
-                >
-                  {e.label} · {e.detail}
-                </Link>
-              ))}
-            </div>
+            <p className="mt-1 text-[11px] font-medium" style={{ color: "var(--accent)" }}>{unlockMessage}</p>
           )}
         </div>
-      </section>
 
-      {/* ===== HEALTH MAP ===== */}
-      <div className="relative px-3 sm:px-5 pt-0 pb-0">
-        {mapHelper && (
-          <p className="mb-3 px-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--accent)", opacity: 0.35 }}>
-            {mapHelper}
-          </p>
-        )}
+        {/* ===== ROW 2: Two-column dashboard body ===== */}
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
 
-        {/* Map container — compact */}
-        <div className="relative" style={{ height: "clamp(280px, 42vw, 360px)" }}>
-          {/* SVG — hub→satellite lines, clearly visible */}
-          <svg
-            className="pointer-events-none absolute inset-0 z-10"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            style={{ width: "100%", height: "100%" }}
-          >
-            {baseLines.map((line, i) => {
-              const edgeKey = `${baseEdges[i][0]}-${baseEdges[i][1]}`;
-              const isActive = activeEdgeSet.has(edgeKey);
-              return (
-                <line
-                  key={`line-${i}`}
-                  x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
-                  stroke={isActive ? "rgba(45,212,191,0.55)" : "rgba(45,212,191,0.22)"}
-                  strokeWidth={isActive ? "0.75" : "0.5"}
-                  strokeLinecap="round"
-                />
-              );
-            })}
-          </svg>
+          {/* LEFT: Central state panel — 3 cols on sm+ */}
+          <div className="sm:col-span-3 space-y-2">
+            {/* State panel */}
+            <Link
+              href={hub.href}
+              className="block rounded-2xl p-4 transition-all hover:brightness-110"
+              style={{ backgroundColor: hubS.bg, border: hubS.border }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl" style={{ color: hubS.iconColor }}>{hub.icon}</span>
+                  <span className="text-[15px] font-bold" style={{ color: hubS.textColor }}>{hub.label}</span>
+                </div>
+                <span className="text-[11px] font-medium" style={{ color: hubS.statusColor, opacity: hub.state === "empty" ? 0.5 : 0.9 }}>
+                  {hub.status}
+                </span>
+              </div>
 
-          {/* Nodes */}
-          <div className="absolute inset-0">
-            {nodes.map((n) => {
+              {/* Key signals inside state panel */}
+              <div className="mt-3 space-y-1.5">
+                {lastDiary && (
+                  <div className="flex items-center gap-2 text-[12px]">
+                    <span style={{ color: "var(--accent)", opacity: 0.6 }}>●</span>
+                    <span style={{ color: "var(--text-muted)" }}>
+                      Самочувствие {lastDiary.wellbeing_score}/10
+                      {lastDiary.symptoms?.length > 0 && ` · ${lastDiary.symptoms.join(", ")}`}
+                    </span>
+                  </div>
+                )}
+                {lastVital && (
+                  <div className="flex items-center gap-2 text-[12px]">
+                    <span style={{ color: "var(--accent)", opacity: 0.6 }}>●</span>
+                    <span style={{ color: "var(--text-muted)" }}>
+                      {lastVital.vital_type}: {lastVital.value} {lastVital.unit}
+                    </span>
+                  </div>
+                )}
+                {medsLen > 0 && (
+                  <div className="flex items-center gap-2 text-[12px]">
+                    <span style={{ color: "var(--accent)", opacity: 0.6 }}>●</span>
+                    <span style={{ color: "var(--text-muted)" }}>
+                      {medsLen} {plural(medsLen, "активный препарат", "активных препарата", "активных препаратов")}
+                    </span>
+                  </div>
+                )}
+                {symptomsNode?.status && (
+                  <div className="flex items-center gap-2 text-[12px]">
+                    <span style={{ color: "rgba(255,255,255,0.25)" }}>●</span>
+                    <span style={{ color: "rgba(255,255,255,0.35)" }}>Симптомы: {symptomsNode.status}</span>
+                  </div>
+                )}
+                {!lastDiary && !lastVital && medsLen === 0 && (
+                  <p className="text-[12px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
+                    Данных пока нет. Начните с записи самочувствия.
+                  </p>
+                )}
+              </div>
+            </Link>
+
+            {/* CTA inside left column — part of the panel flow */}
+            <Link
+              href={agentNextStep.href}
+              className="group flex items-center gap-3 rounded-xl px-4 py-3 transition-all hover:brightness-110"
+              style={{
+                backgroundColor: "rgba(45,212,191,0.06)",
+                border: "1px solid rgba(45,212,191,0.20)",
+              }}
+            >
+              <span
+                className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold"
+                style={{ backgroundColor: "rgba(45,212,191,0.14)", color: "var(--accent)" }}
+              >→</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
+                  {agentNextStep.text}
+                </p>
+                <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{agentNextStep.sub}</p>
+              </div>
+            </Link>
+          </div>
+
+          {/* RIGHT: Secondary module cards — 2 cols on sm+ */}
+          <div className="sm:col-span-2 grid grid-cols-2 sm:grid-cols-1 gap-2">
+            {satellites.map((n) => {
               const s = stateStyles[n.state];
-              const rel = relatedNodes.has(n.key);
-              const [left, top] = nodePos[n.key];
-              const isHub = n.key === "wellbeing";
-              const isVitals = n.key === "vitals";
-              const isBridge = n.key === "lifestyle";
-
-              {/* Lifestyle — bridge pill */}
-              if (isBridge) {
-                return (
-                  <Link
-                    key={n.key}
-                    href={n.href}
-                    className="absolute flex items-center gap-2 rounded-full px-3.5 py-1.5 transition-all hover:brightness-125"
-                    style={{
-                      left: `${left}%`, top: `${top}%`,
-                      transform: "translate(-50%, -50%)",
-                      backgroundColor: "rgba(45,212,191,0.04)",
-                      border: "1px solid rgba(45,212,191,0.12)",
-                    }}
-                  >
-                    <span className="text-[11px]" style={{ color: s.iconColor }}>{n.icon}</span>
-                    <span className="text-[11px] font-semibold" style={{ color: s.textColor }}>{n.label}</span>
-                    <span className="text-[9px]" style={{ color: s.statusColor, opacity: 0.6 }}>{n.status}</span>
-                  </Link>
-                );
-              }
-
-              {/* Hub — primary but not oversized */}
-              if (isHub) {
-                const symptomsNode = modules.find((m) => m.key === "symptoms");
-                const symptomsText = symptomsNode?.status;
-                return (
-                  <Link
-                    key={n.key}
-                    href={n.href}
-                    className="absolute flex flex-col items-center text-center rounded-2xl px-4 py-4 sm:px-5 sm:py-4 transition-all hover:brightness-110 active:scale-[0.97]"
-                    style={{
-                      left: `${left}%`, top: `${top}%`,
-                      transform: "translate(-50%, -50%)",
-                      backgroundColor: s.bg,
-                      border: s.border,
-                      boxShadow: resolveGlow(s.glow, rel),
-                      width: "clamp(120px, 32%, 160px)",
-                    }}
-                  >
-                    {rel && (
-                      <span className="absolute top-1.5 right-2 rounded-full" style={{ width: 8, height: 8, backgroundColor: "var(--accent)", boxShadow: "0 0 10px rgba(45,212,191,0.5)" }} />
-                    )}
-                    <span className="text-3xl" style={{ color: s.iconColor }}>{n.icon}</span>
-                    <span className="mt-1 text-[13px] sm:text-[14px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
-                    <span className="mt-0.5 text-[11px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
-                    {symptomsText && (
-                      <span className="mt-1 text-[9px] font-medium" style={{ color: "rgba(255,255,255,0.3)" }}>
-                        симптомы · {symptomsText}
-                      </span>
-                    )}
-                  </Link>
-                );
-              }
-
-              {/* Vitals — secondary */}
-              if (isVitals) {
-                return (
-                  <Link
-                    key={n.key}
-                    href={n.href}
-                    className="absolute flex flex-col items-center text-center rounded-xl px-3 py-2.5 transition-all hover:brightness-110 active:scale-[0.97]"
-                    style={{
-                      left: `${left}%`, top: `${top}%`,
-                      transform: "translate(-50%, -50%)",
-                      backgroundColor: s.bg,
-                      border: s.border,
-                      boxShadow: resolveGlow(s.glow, rel),
-                      width: "clamp(90px, 24%, 120px)",
-                    }}
-                  >
-                    {rel && (
-                      <span className="absolute top-1 right-1.5 rounded-full" style={{ width: 6, height: 6, backgroundColor: "var(--accent)", boxShadow: "0 0 8px rgba(45,212,191,0.5)" }} />
-                    )}
-                    <span className="text-lg" style={{ color: s.iconColor }}>{n.icon}</span>
-                    <span className="mt-0.5 text-[11px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
-                    <span className="mt-0.5 text-[10px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
-                  </Link>
-                );
-              }
-
-              {/* Tertiary nodes */}
-              const isMeds = n.key === "medications";
               return (
                 <Link
                   key={n.key}
                   href={n.href}
-                  className="absolute flex flex-col items-center text-center rounded-xl px-2.5 py-2 transition-all hover:brightness-110 active:scale-[0.97]"
-                  style={{
-                    left: `${left}%`, top: `${top}%`,
-                    transform: "translate(-50%, -50%)",
-                    backgroundColor: s.bg,
-                    border: s.border,
-                    boxShadow: resolveGlow(s.glow, rel),
-                    width: isMeds ? "clamp(88px, 24%, 110px)" : "clamp(80px, 22%, 100px)",
-                  }}
+                  className="rounded-xl px-3.5 py-3 transition-all hover:brightness-110"
+                  style={{ backgroundColor: s.bg, border: s.border }}
                 >
-                  {rel && (
-                    <span className="absolute top-1 right-1 rounded-full" style={{ width: 6, height: 6, backgroundColor: "var(--accent)", boxShadow: "0 0 8px rgba(45,212,191,0.5)" }} />
-                  )}
-                  <span className={isMeds ? "text-base" : "text-sm"} style={{ color: s.iconColor }}>{n.icon}</span>
-                  <span className="mt-0.5 text-[10px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
-                  <span className="mt-0.5 text-[9px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="text-[12px] font-bold" style={{ color: s.textColor }}>{n.label}</span>
+                  </div>
+                  <p className="mt-1 text-[10px] leading-snug" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>
+                    {n.status}
+                    {n.detail && <span style={{ color: "var(--text-muted)", opacity: 0.5 }}> · {n.detail}</span>}
+                  </p>
                 </Link>
               );
             })}
+            {/* Lifestyle in right column */}
+            <Link
+              href={bridge.href}
+              className="rounded-xl px-3.5 py-2.5 transition-all hover:brightness-110"
+              style={{ backgroundColor: "rgba(45,212,191,0.03)", border: "1px solid rgba(45,212,191,0.10)" }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm" style={{ color: bridgeS.iconColor }}>{bridge.icon}</span>
+                <span className="text-[12px] font-bold" style={{ color: bridgeS.textColor }}>{bridge.label}</span>
+              </div>
+              <p className="mt-0.5 text-[10px]" style={{ color: bridgeS.statusColor, opacity: 0.6 }}>{bridge.status}</p>
+            </Link>
           </div>
         </div>
-      </div>
 
-      {/* ===== NEXT ACTION ===== */}
-      <div className="px-4 sm:px-6 pt-2 pb-6 sm:pb-8">
-        <Link
-          href={agentNextStep.href}
-          className="group relative block rounded-2xl px-4 py-4 sm:py-5 transition-all hover:brightness-110 active:scale-[0.995] overflow-hidden"
-          style={{
-            backgroundColor: "rgba(45,212,191,0.05)",
-            border: "1px solid rgba(45,212,191,0.20)",
-          }}
-        >
-          <div className="relative flex items-center gap-4">
-            <span
-              className="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold transition-transform group-hover:scale-110"
-              style={{ backgroundColor: "rgba(45,212,191,0.12)", color: "var(--accent)" }}
-            >
-              →
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] sm:text-[17px] font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
-                {agentNextStep.text}
-              </p>
-              <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-muted)" }}>
-                {agentNextStep.sub}
-              </p>
-            </div>
-            <span
-              className="shrink-0 text-lg font-bold transition-transform group-hover:translate-x-1"
-              style={{ color: "var(--accent)", opacity: 0.3 }}
-            >
-              →
-            </span>
-          </div>
-        </Link>
+        {/* ===== ROW 3: Map helper context if available ===== */}
+        {mapHelper && (
+          <p className="text-[10px] font-medium" style={{ color: "var(--accent)", opacity: 0.3 }}>
+            {mapHelper}
+          </p>
+        )}
+
       </div>
     </div>
   );
