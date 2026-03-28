@@ -176,10 +176,10 @@ export default async function DashboardPage() {
   // Node positions — hub top-center, satellites spread wider for breathing room
   const nodePos: Record<string, [number, number]> = {
     wellbeing:    [50, 14],
-    vitals:       [82, 34],
-    documents:    [18, 48],
-    medications:  [82, 64],
-    lifestyle:    [50, 84],
+    vitals:       [82, 32],
+    documents:    [15, 50],
+    medications:  [85, 62],
+    lifestyle:    [50, 82],
   };
   const nodeCenters = nodePos;
 
@@ -269,16 +269,16 @@ export default async function DashboardPage() {
           background: "radial-gradient(circle 400px at 30% 80%, rgba(45,212,191,0.03) 0%, transparent 70%)",
         }} />
 
-        <div className="relative px-5 sm:px-8 pt-12 sm:pt-16 pb-6 sm:pb-8">
+        <div className="relative px-5 sm:px-8 pt-10 sm:pt-12 pb-5 sm:pb-6">
           <h1
-            className="text-[30px] sm:text-[40px] lg:text-[48px] font-extrabold leading-[1.08] tracking-tight"
+            className="text-[27px] sm:text-[36px] lg:text-[42px] font-extrabold leading-[1.08] tracking-tight"
             style={{ color: "var(--text-primary)" }}
           >
             {agentOpening}
           </h1>
 
           <p
-            className="mt-5 text-[17px] sm:text-[20px] leading-[1.55] max-w-xl"
+            className="mt-4 text-[16px] sm:text-[18px] leading-[1.55] max-w-xl"
             style={{ color: "var(--text-muted)" }}
           >
             {agentObservation}
@@ -343,8 +343,8 @@ export default async function DashboardPage() {
                 <line
                   key={`line-${i}`}
                   x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
-                  stroke={isActive ? "rgba(45,212,191,0.50)" : "rgba(45,212,191,0.18)"}
-                  strokeWidth={isActive ? "0.7" : "0.45"}
+                  stroke={isActive ? "rgba(45,212,191,0.55)" : "rgba(45,212,191,0.22)"}
+                  strokeWidth={isActive ? "0.75" : "0.5"}
                   strokeLinecap="round"
                 />
               );
@@ -361,23 +361,23 @@ export default async function DashboardPage() {
               const isVitals = n.key === "vitals";
               const isBridge = n.key === "lifestyle";
 
-              {/* Lifestyle — bridge pill at bottom */}
+              {/* Lifestyle — bridge pill at bottom, a real layer */}
               if (isBridge) {
                 return (
                   <Link
                     key={n.key}
                     href={n.href}
-                    className="absolute flex items-center gap-2 rounded-full px-5 py-2 transition-all hover:brightness-125"
+                    className="absolute flex items-center gap-2.5 rounded-full px-5 py-2.5 transition-all hover:brightness-125"
                     style={{
                       left: `${left}%`, top: `${top}%`,
                       transform: "translate(-50%, -50%)",
-                      backgroundColor: s.bg,
-                      border: s.border,
+                      backgroundColor: "rgba(45,212,191,0.04)",
+                      border: "1px solid rgba(45,212,191,0.14)",
                     }}
                   >
-                    <span className="text-[13px]" style={{ color: s.iconColor }}>{n.icon}</span>
-                    <span className="text-[12px] font-semibold" style={{ color: s.textColor }}>{n.label}</span>
-                    <span className="text-[10px]" style={{ color: s.statusColor, opacity: 0.6 }}>{n.status}</span>
+                    <span className="text-[14px]" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="text-[13px] font-semibold" style={{ color: s.textColor }}>{n.label}</span>
+                    <span className="text-[11px]" style={{ color: s.statusColor, opacity: 0.7 }}>{n.status}</span>
                   </Link>
                 );
               }
@@ -447,26 +447,27 @@ export default async function DashboardPage() {
                 );
               }
 
-              {/* Tertiary nodes — documents, medications */}
+              {/* Tertiary nodes — documents (lighter/compact) vs medications (slightly bolder) */}
+              const isMeds = n.key === "medications";
               return (
                 <Link
                   key={n.key}
                   href={n.href}
-                  className="absolute flex flex-col items-center text-center rounded-2xl px-3 py-3 transition-all hover:brightness-110 active:scale-[0.97]"
+                  className={`absolute flex flex-col items-center text-center rounded-2xl transition-all hover:brightness-110 active:scale-[0.97] ${isMeds ? "px-3.5 py-3.5" : "px-3 py-2.5"}`}
                   style={{
                     left: `${left}%`, top: `${top}%`,
                     transform: "translate(-50%, -50%)",
                     backgroundColor: s.bg,
                     border: s.border,
                     boxShadow: resolveGlow(s.glow, rel),
-                    width: "clamp(100px, 26%, 125px)",
+                    width: isMeds ? "clamp(105px, 28%, 132px)" : "clamp(92px, 24%, 115px)",
                   }}
                 >
                   {rel && (
                     <span className="absolute top-1.5 right-1.5 rounded-full" style={{ width: 7, height: 7, backgroundColor: "var(--accent)", boxShadow: "0 0 12px rgba(45,212,191,0.5)" }} />
                   )}
-                  <span className="text-lg" style={{ color: s.iconColor }}>{n.icon}</span>
-                  <span className="mt-1 text-[12px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
+                  <span className={isMeds ? "text-xl" : "text-base"} style={{ color: s.iconColor }}>{n.icon}</span>
+                  <span className={`mt-1 leading-tight font-bold ${isMeds ? "text-[12px]" : "text-[11px]"}`} style={{ color: s.textColor }}>{n.label}</span>
                   <span className="mt-0.5 text-[10px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
                   {n.detail && (
                     <span className="mt-0.5 text-[9px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>{n.detail}</span>
