@@ -150,13 +150,6 @@ export default async function DashboardPage() {
       icon: "⊕",
     },
     {
-      key: "symptoms", label: "Симптомы", href: "/symptoms-map",
-      status: modByKey.symptoms?.status ?? "нет данных",
-      detail: null,
-      state: nodeState(c.symptoms, false, false),
-      icon: "◎",
-    },
-    {
       key: "lifestyle", label: "Образ жизни", href: "/timeline",
       status: modByKey.lifestyle?.status ?? "нет активности",
       detail: null,
@@ -169,7 +162,7 @@ export default async function DashboardPage() {
   const corKeyToNode: Record<string, string> = {
     diary: "wellbeing", emotions: "wellbeing",
     vitals: "vitals", documents: "documents",
-    medications: "medications", symptoms: "symptoms",
+    medications: "medications",
   };
   const relatedNodes = new Set<string>();
   const shownCorrelations = mco.correlations.slice(0, 2);
@@ -180,14 +173,13 @@ export default async function DashboardPage() {
     if (toNode) relatedNodes.add(toNode);
   }
 
-  // Node positions — hub top-center, satellites around it in clear layers
+  // Node positions — hub top-center, satellites spread wider for breathing room
   const nodePos: Record<string, [number, number]> = {
-    wellbeing:    [50, 16],
-    vitals:       [78, 32],
-    documents:    [22, 44],
-    medications:  [78, 60],
-    lifestyle:    [50, 80],
-    symptoms:     [62, 24],   // subordinate, tucked near hub/vitals
+    wellbeing:    [50, 14],
+    vitals:       [82, 34],
+    documents:    [18, 48],
+    medications:  [82, 64],
+    lifestyle:    [50, 84],
   };
   const nodeCenters = nodePos;
 
@@ -277,7 +269,7 @@ export default async function DashboardPage() {
           background: "radial-gradient(circle 400px at 30% 80%, rgba(45,212,191,0.03) 0%, transparent 70%)",
         }} />
 
-        <div className="relative px-5 sm:px-8 pt-12 sm:pt-16 pb-10 sm:pb-14">
+        <div className="relative px-5 sm:px-8 pt-12 sm:pt-16 pb-6 sm:pb-8">
           <h1
             className="text-[30px] sm:text-[40px] lg:text-[48px] font-extrabold leading-[1.08] tracking-tight"
             style={{ color: "var(--text-primary)" }}
@@ -320,20 +312,24 @@ export default async function DashboardPage() {
       </section>
 
       {/* ===== HEALTH MAP ===== */}
-      <div className="relative px-4 sm:px-6 pt-8 sm:pt-10 pb-0">
-        {/* Map field background — centered on hub */}
+      <div className="relative px-2 sm:px-4 pt-0 pb-0">
+        {/* Visual bridge from agent zone — gradient bleeds down */}
+        <div className="pointer-events-none absolute inset-x-0 -top-12 h-24" style={{
+          background: "linear-gradient(to bottom, rgba(45,212,191,0.06) 0%, transparent 100%)",
+        }} />
+        {/* Map field glow — wide, centered on hub */}
         <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0" style={{
-          background: "radial-gradient(ellipse 70% 50% at 50% 18%, rgba(45,212,191,0.04) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 90% 55% at 50% 16%, rgba(45,212,191,0.05) 0%, transparent 70%)",
         }} />
         {mapHelper && (
-          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--accent)", opacity: 0.4 }}>
+          <p className="mb-4 px-2 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--accent)", opacity: 0.4 }}>
             {mapHelper}
           </p>
         )}
 
-        {/* Map container */}
-        <div className="relative" style={{ height: "clamp(340px, 50vw, 440px)" }}>
-          {/* SVG — only hub→satellite lines */}
+        {/* Map container — taller, wider */}
+        <div className="relative" style={{ height: "clamp(360px, 56vw, 480px)" }}>
+          {/* SVG — hub→satellite lines, clearly visible */}
           <svg
             className="pointer-events-none absolute inset-0 z-10"
             viewBox="0 0 100 100"
@@ -347,8 +343,8 @@ export default async function DashboardPage() {
                 <line
                   key={`line-${i}`}
                   x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
-                  stroke={isActive ? "rgba(45,212,191,0.40)" : "rgba(45,212,191,0.10)"}
-                  strokeWidth={isActive ? "0.6" : "0.3"}
+                  stroke={isActive ? "rgba(45,212,191,0.50)" : "rgba(45,212,191,0.18)"}
+                  strokeWidth={isActive ? "0.7" : "0.45"}
                   strokeLinecap="round"
                 />
               );
@@ -362,36 +358,16 @@ export default async function DashboardPage() {
               const rel = relatedNodes.has(n.key);
               const [left, top] = nodePos[n.key];
               const isHub = n.key === "wellbeing";
-              const isSymptoms = n.key === "symptoms";
+              const isVitals = n.key === "vitals";
               const isBridge = n.key === "lifestyle";
 
-              {/* Symptoms — small subordinate tag near hub */}
-              if (isSymptoms) {
-                return (
-                  <Link
-                    key={n.key}
-                    href={n.href}
-                    className="absolute flex items-center gap-1 rounded-full px-2.5 py-0.5 transition-all hover:brightness-125"
-                    style={{
-                      left: `${left}%`, top: `${top}%`,
-                      transform: "translate(-50%, -50%)",
-                      backgroundColor: s.bg,
-                      border: s.border,
-                    }}
-                  >
-                    <span className="text-[10px]" style={{ color: s.iconColor }}>{n.icon}</span>
-                    <span className="text-[10px] font-medium" style={{ color: s.textColor }}>{n.label}</span>
-                  </Link>
-                );
-              }
-
-              {/* Lifestyle — bridge node at bottom */}
+              {/* Lifestyle — bridge pill at bottom */}
               if (isBridge) {
                 return (
                   <Link
                     key={n.key}
                     href={n.href}
-                    className="absolute flex items-center gap-2 rounded-full px-4 py-1.5 transition-all hover:brightness-125"
+                    className="absolute flex items-center gap-2 rounded-full px-5 py-2 transition-all hover:brightness-125"
                     style={{
                       left: `${left}%`, top: `${top}%`,
                       transform: "translate(-50%, -50%)",
@@ -399,8 +375,8 @@ export default async function DashboardPage() {
                       border: s.border,
                     }}
                   >
-                    <span className="text-[12px]" style={{ color: s.iconColor }}>{n.icon}</span>
-                    <span className="text-[11px] font-semibold" style={{ color: s.textColor }}>{n.label}</span>
+                    <span className="text-[13px]" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="text-[12px] font-semibold" style={{ color: s.textColor }}>{n.label}</span>
                     <span className="text-[10px]" style={{ color: s.statusColor, opacity: 0.6 }}>{n.status}</span>
                   </Link>
                 );
@@ -408,6 +384,8 @@ export default async function DashboardPage() {
 
               {/* Hub — dominant center */}
               if (isHub) {
+                const symptomsNode = modules.find((m) => m.key === "symptoms");
+                const symptomsText = symptomsNode?.status;
                 return (
                   <Link
                     key={n.key}
@@ -419,7 +397,7 @@ export default async function DashboardPage() {
                       backgroundColor: s.bg,
                       border: s.border,
                       boxShadow: `${resolveGlow(s.glow, rel)}, 0 0 60px rgba(45,212,191,0.06)`,
-                      width: "clamp(160px, 42%, 210px)",
+                      width: "clamp(170px, 44%, 220px)",
                     }}
                   >
                     {rel && (
@@ -431,11 +409,45 @@ export default async function DashboardPage() {
                     {n.detail && (
                       <span className="mt-0.5 text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>{n.detail}</span>
                     )}
+                    {symptomsText && (
+                      <span className="mt-1.5 text-[9px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>
+                        симптомы · {symptomsText}
+                      </span>
+                    )}
                   </Link>
                 );
               }
 
-              {/* Satellite nodes — readable, visible, not microscopic */}
+              {/* Vitals — clear secondary, bigger than others */}
+              if (isVitals) {
+                return (
+                  <Link
+                    key={n.key}
+                    href={n.href}
+                    className="absolute flex flex-col items-center text-center rounded-2xl px-4 py-3.5 transition-all hover:brightness-110 active:scale-[0.97]"
+                    style={{
+                      left: `${left}%`, top: `${top}%`,
+                      transform: "translate(-50%, -50%)",
+                      backgroundColor: s.bg,
+                      border: s.border,
+                      boxShadow: resolveGlow(s.glow, rel),
+                      width: "clamp(110px, 30%, 145px)",
+                    }}
+                  >
+                    {rel && (
+                      <span className="absolute top-1.5 right-2 rounded-full" style={{ width: 8, height: 8, backgroundColor: "var(--accent)", boxShadow: "0 0 12px rgba(45,212,191,0.5)" }} />
+                    )}
+                    <span className="text-2xl" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="mt-1 text-[13px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
+                    <span className="mt-0.5 text-[11px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
+                    {n.detail && (
+                      <span className="mt-0.5 text-[9px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>{n.detail}</span>
+                    )}
+                  </Link>
+                );
+              }
+
+              {/* Tertiary nodes — documents, medications */}
               return (
                 <Link
                   key={n.key}
@@ -447,13 +459,13 @@ export default async function DashboardPage() {
                     backgroundColor: s.bg,
                     border: s.border,
                     boxShadow: resolveGlow(s.glow, rel),
-                    width: "clamp(100px, 26%, 130px)",
+                    width: "clamp(100px, 26%, 125px)",
                   }}
                 >
                   {rel && (
                     <span className="absolute top-1.5 right-1.5 rounded-full" style={{ width: 7, height: 7, backgroundColor: "var(--accent)", boxShadow: "0 0 12px rgba(45,212,191,0.5)" }} />
                   )}
-                  <span className="text-xl" style={{ color: s.iconColor }}>{n.icon}</span>
+                  <span className="text-lg" style={{ color: s.iconColor }}>{n.icon}</span>
                   <span className="mt-1 text-[12px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
                   <span className="mt-0.5 text-[10px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
                   {n.detail && (
@@ -466,8 +478,8 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ===== NEXT ACTION — directly below map, tight spacing ===== */}
-      <div className="px-4 sm:px-6 pt-3 pb-8 sm:pb-10">
+      {/* ===== NEXT ACTION — directly below map ===== */}
+      <div className="px-4 sm:px-6 pt-2 pb-8 sm:pb-10">
         <Link
           href={agentNextStep.href}
           className="group relative block rounded-3xl px-6 py-7 sm:py-8 transition-all hover:brightness-110 active:scale-[0.995] overflow-hidden"
