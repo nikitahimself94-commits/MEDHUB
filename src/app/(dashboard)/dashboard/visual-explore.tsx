@@ -369,7 +369,7 @@ const concepts = [
 ];
 
 export function VisualExplore({ variant }: { variant?: number }) {
-  const [active, setActive] = useState(variant ?? 1);
+  const [active, setActive] = useState(variant ?? 3);
   const ActiveConcept = concepts.find((c) => c.id === active)?.component ?? Concept1;
 
   return (
