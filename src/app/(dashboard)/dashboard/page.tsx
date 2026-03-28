@@ -180,27 +180,22 @@ export default async function DashboardPage() {
     if (toNode) relatedNodes.add(toNode);
   }
 
-  // Node positions as [left%, top%] within the map canvas
-  // Same coordinates used for SVG (viewBox 0 0 100 100) and CSS absolute placement
+  // Node positions — hub top-center, satellites around it in clear layers
   const nodePos: Record<string, [number, number]> = {
-    wellbeing: [50, 20],
-    vitals: [82, 38],
-    documents: [16, 48],
-    medications: [68, 62],
-    symptoms: [84, 82],
-    lifestyle: [40, 93],
+    wellbeing:    [50, 16],
+    vitals:       [78, 32],
+    documents:    [22, 44],
+    medications:  [78, 60],
+    lifestyle:    [50, 80],
+    symptoms:     [62, 24],   // subordinate, tucked near hub/vitals
   };
   const nodeCenters = nodePos;
 
-  // Structural base map — always visible, shows the system skeleton
+  // Only hub→satellite structural lines — no cross-links between satellites
   const baseEdges: Array<[string, string]> = [
     ["wellbeing", "vitals"],
     ["wellbeing", "documents"],
     ["wellbeing", "medications"],
-    ["vitals", "documents"],
-    ["vitals", "symptoms"],
-    ["medications", "documents"],
-    ["medications", "lifestyle"],
     ["wellbeing", "lifestyle"],
   ];
   const baseLines = baseEdges.map(([a, b]) => ({
@@ -208,48 +203,50 @@ export default async function DashboardPage() {
     x2: nodeCenters[b][0], y2: nodeCenters[b][1],
   }));
 
-  // Active correlation lines — only from real MCO data
-  const activeLineKeys = new Set<string>();
-  const activeLines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+  // Active correlations — expressed as strengthened hub-lines, not separate web
+  const activeEdgeSet = new Set<string>();
   for (const cor of shownCorrelations) {
     const fromNode = corKeyToNode[cor.from];
     const toNode = corKeyToNode[cor.to];
-    const from = nodeCenters[fromNode];
-    const to = nodeCenters[toNode];
-    if (from && to) {
-      activeLines.push({ x1: from[0], y1: from[1], x2: to[0], y2: to[1] });
-      activeLineKeys.add(`${fromNode}-${toNode}`);
-      activeLineKeys.add(`${toNode}-${fromNode}`);
+    // Only strengthen edges that already exist (hub→satellite)
+    for (const [a, b] of baseEdges) {
+      if ((a === fromNode && b === toNode) || (a === toNode && b === fromNode) ||
+          (a === fromNode || b === fromNode) || (a === toNode || b === toNode)) {
+        // strengthen if either end matches a correlated module
+        if ((fromNode === a || fromNode === b) && (toNode === a || toNode === b)) {
+          activeEdgeSet.add(`${a}-${b}`);
+        }
+      }
     }
   }
 
   const stateStyles: Record<MapNode["state"], { bg: string; border: string; glow: string; iconColor: string; textColor: string; statusColor: string }> = {
     empty: {
-      bg: "rgba(255,255,255,0.015)",
-      border: "1px solid rgba(255,255,255,0.05)",
+      bg: "rgba(255,255,255,0.03)",
+      border: "1px solid rgba(255,255,255,0.08)",
       glow: "none",
-      iconColor: "rgba(255,255,255,0.2)",
-      textColor: "rgba(255,255,255,0.3)",
-      statusColor: "rgba(255,255,255,0.25)",
+      iconColor: "rgba(255,255,255,0.35)",
+      textColor: "rgba(255,255,255,0.55)",
+      statusColor: "rgba(255,255,255,0.40)",
     },
     active: {
-      bg: "rgba(45,212,191,0.05)",
-      border: "1px solid rgba(45,212,191,0.22)",
+      bg: "rgba(45,212,191,0.06)",
+      border: "1px solid rgba(45,212,191,0.25)",
       glow: "0 0 30px rgba(45,212,191,0.10)",
       iconColor: "var(--accent)",
       textColor: "var(--text-primary)",
       statusColor: "var(--accent)",
     },
     stale: {
-      bg: "rgba(251,191,36,0.03)",
-      border: "1px solid rgba(251,191,36,0.15)",
+      bg: "rgba(251,191,36,0.05)",
+      border: "1px solid rgba(251,191,36,0.18)",
       glow: "0 0 24px rgba(251,191,36,0.06)",
-      iconColor: "rgba(251,191,36,0.6)",
+      iconColor: "rgba(251,191,36,0.7)",
       textColor: "var(--text-primary)",
       statusColor: "rgba(251,191,36,0.7)",
     },
     attention: {
-      bg: "rgba(245,158,11,0.05)",
+      bg: "rgba(245,158,11,0.06)",
       border: "1px solid rgba(245,158,11,0.30)",
       glow: "0 0 36px rgba(245,158,11,0.12)",
       iconColor: "var(--amber)",
@@ -323,10 +320,10 @@ export default async function DashboardPage() {
       </section>
 
       {/* ===== HEALTH MAP ===== */}
-      <div className="relative px-4 sm:px-6 pt-8 sm:pt-10 pb-4">
+      <div className="relative px-4 sm:px-6 pt-8 sm:pt-10 pb-0">
         {/* Map field background — centered on hub */}
         <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0" style={{
-          background: "radial-gradient(ellipse 70% 50% at 50% 25%, rgba(45,212,191,0.04) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 70% 50% at 50% 18%, rgba(45,212,191,0.04) 0%, transparent 70%)",
         }} />
         {mapHelper && (
           <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--accent)", opacity: 0.4 }}>
@@ -334,161 +331,133 @@ export default async function DashboardPage() {
           </p>
         )}
 
-        {/* Map container — height from the absolute-positioned canvas child */}
-        <div className="relative" style={{ height: "clamp(380px, 55vw, 500px)" }}>
-          {/* SVG lines — stretches to fill container so coordinates match CSS % */}
+        {/* Map container */}
+        <div className="relative" style={{ height: "clamp(340px, 50vw, 440px)" }}>
+          {/* SVG — only hub→satellite lines */}
           <svg
             className="pointer-events-none absolute inset-0 z-10"
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
             style={{ width: "100%", height: "100%" }}
           >
-            <defs>
-              <filter id="active-glow">
-                <feGaussianBlur stdDeviation="2" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* Layer 1: Structural base — always visible, the system skeleton */}
             {baseLines.map((line, i) => {
-              const key = `${baseEdges[i][0]}-${baseEdges[i][1]}`;
-              const isActive = activeLineKeys.has(key);
-              if (isActive) return null;
+              const edgeKey = `${baseEdges[i][0]}-${baseEdges[i][1]}`;
+              const isActive = activeEdgeSet.has(edgeKey);
               return (
                 <line
-                  key={`base-${i}`}
+                  key={`line-${i}`}
                   x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
-                  stroke="rgba(45,212,191,0.14)"
-                  strokeWidth="0.35"
+                  stroke={isActive ? "rgba(45,212,191,0.40)" : "rgba(45,212,191,0.10)"}
+                  strokeWidth={isActive ? "0.6" : "0.3"}
                   strokeLinecap="round"
                 />
               );
             })}
-
-            {/* Node anchor dots — always visible, hub dot is largest */}
-            {Object.entries(nodeCenters).map(([key, [cx, cy]]) => (
-              <circle
-                key={`dot-${key}`}
-                cx={cx}
-                cy={cy}
-                r={key === "wellbeing" ? 2.5 : key === "lifestyle" ? 0.8 : 1.2}
-                fill={relatedNodes.has(key) ? "rgba(45,212,191,0.6)" : "rgba(45,212,191,0.15)"}
-              />
-            ))}
-
-            {/* Hub ring — always visible, marks the center of the system */}
-            <circle
-              cx={nodePos.wellbeing[0]}
-              cy={nodePos.wellbeing[1]}
-              r="12"
-              fill="none"
-              stroke="rgba(45,212,191,0.06)"
-              strokeWidth="0.3"
-            />
-
-            {/* Layer 2: Active correlations — strong visible signal */}
-            {activeLines.map((line, i) => (
-              <g key={`active-${i}`}>
-                <line
-                  x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
-                  stroke="rgba(45,212,191,0.15)"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  filter="url(#active-glow)"
-                />
-                <line
-                  x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
-                  stroke="rgba(45,212,191,0.50)"
-                  strokeWidth="0.8"
-                  strokeLinecap="round"
-                />
-                <circle cx={line.x1} cy={line.y1} r="2" fill="rgba(45,212,191,0.6)" />
-                <circle cx={line.x2} cy={line.y2} r="2" fill="rgba(45,212,191,0.6)" />
-              </g>
-            ))}
           </svg>
 
-          {/* Spatial map canvas — nodes placed absolutely within parent's height */}
+          {/* Nodes */}
           <div className="absolute inset-0">
             {nodes.map((n) => {
               const s = stateStyles[n.state];
               const rel = relatedNodes.has(n.key);
               const [left, top] = nodePos[n.key];
               const isHub = n.key === "wellbeing";
+              const isSymptoms = n.key === "symptoms";
               const isBridge = n.key === "lifestyle";
-              const isSecondary = n.key === "vitals";
+
+              {/* Symptoms — small subordinate tag near hub */}
+              if (isSymptoms) {
+                return (
+                  <Link
+                    key={n.key}
+                    href={n.href}
+                    className="absolute flex items-center gap-1 rounded-full px-2.5 py-0.5 transition-all hover:brightness-125"
+                    style={{
+                      left: `${left}%`, top: `${top}%`,
+                      transform: "translate(-50%, -50%)",
+                      backgroundColor: s.bg,
+                      border: s.border,
+                    }}
+                  >
+                    <span className="text-[10px]" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="text-[10px] font-medium" style={{ color: s.textColor }}>{n.label}</span>
+                  </Link>
+                );
+              }
+
+              {/* Lifestyle — bridge node at bottom */}
               if (isBridge) {
                 return (
                   <Link
                     key={n.key}
                     href={n.href}
-                    className="absolute flex items-center gap-1.5 rounded-full px-4 py-1 transition-all hover:brightness-125"
+                    className="absolute flex items-center gap-2 rounded-full px-4 py-1.5 transition-all hover:brightness-125"
                     style={{
                       left: `${left}%`, top: `${top}%`,
                       transform: "translate(-50%, -50%)",
-                      border: `1px solid ${n.state === "empty" ? "rgba(255,255,255,0.04)" : "rgba(45,212,191,0.10)"}`,
+                      backgroundColor: s.bg,
+                      border: s.border,
                     }}
                   >
-                    <span className="text-[10px]" style={{ color: s.iconColor }}>{n.icon}</span>
-                    <span className="text-[9px] font-medium" style={{ color: s.textColor }}>{n.label}</span>
-                    <span className="text-[8px]" style={{ color: s.statusColor, opacity: 0.5 }}>{n.status}</span>
+                    <span className="text-[12px]" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="text-[11px] font-semibold" style={{ color: s.textColor }}>{n.label}</span>
+                    <span className="text-[10px]" style={{ color: s.statusColor, opacity: 0.6 }}>{n.status}</span>
                   </Link>
                 );
               }
 
+              {/* Hub — dominant center */}
+              if (isHub) {
+                return (
+                  <Link
+                    key={n.key}
+                    href={n.href}
+                    className="absolute flex flex-col items-center text-center rounded-[32px] px-6 py-6 sm:px-8 sm:py-7 transition-all hover:brightness-110 active:scale-[0.97]"
+                    style={{
+                      left: `${left}%`, top: `${top}%`,
+                      transform: "translate(-50%, -50%)",
+                      backgroundColor: s.bg,
+                      border: s.border,
+                      boxShadow: `${resolveGlow(s.glow, rel)}, 0 0 60px rgba(45,212,191,0.06)`,
+                      width: "clamp(160px, 42%, 210px)",
+                    }}
+                  >
+                    {rel && (
+                      <span className="absolute top-2 right-3 rounded-full" style={{ width: 10, height: 10, backgroundColor: "var(--accent)", boxShadow: "0 0 12px rgba(45,212,191,0.5)" }} />
+                    )}
+                    <span className="text-5xl sm:text-6xl" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="mt-2 text-[16px] sm:text-[18px] font-extrabold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
+                    <span className="mt-1 text-[12px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
+                    {n.detail && (
+                      <span className="mt-0.5 text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>{n.detail}</span>
+                    )}
+                  </Link>
+                );
+              }
+
+              {/* Satellite nodes — readable, visible, not microscopic */}
               return (
                 <Link
                   key={n.key}
                   href={n.href}
-                  className={`absolute flex flex-col items-center text-center transition-all hover:brightness-110 active:scale-[0.97] ${
-                    isHub ? "rounded-[32px] px-6 py-6 sm:px-8 sm:py-8" :
-                    isSecondary ? "rounded-2xl px-3 py-3.5" :
-                    "rounded-xl px-2 py-2.5"
-                  }`}
+                  className="absolute flex flex-col items-center text-center rounded-2xl px-3 py-3 transition-all hover:brightness-110 active:scale-[0.97]"
                   style={{
                     left: `${left}%`, top: `${top}%`,
                     transform: "translate(-50%, -50%)",
                     backgroundColor: s.bg,
                     border: s.border,
-                    boxShadow: isHub
-                      ? `${resolveGlow(s.glow, rel)}, 0 0 60px rgba(45,212,191,0.06)`
-                      : resolveGlow(s.glow, rel),
-                    width: isHub ? "clamp(160px, 44%, 220px)" : isSecondary ? "clamp(90px, 24%, 120px)" : "clamp(72px, 20%, 96px)",
+                    boxShadow: resolveGlow(s.glow, rel),
+                    width: "clamp(100px, 26%, 130px)",
                   }}
                 >
                   {rel && (
-                    <span
-                      className={`absolute ${isHub ? "top-2 right-3" : "top-1.5 right-1.5"} rounded-full`}
-                      style={{
-                        width: isHub ? 10 : 7, height: isHub ? 10 : 7,
-                        backgroundColor: "var(--accent)",
-                        boxShadow: "0 0 12px rgba(45,212,191,0.5)",
-                      }}
-                    />
+                    <span className="absolute top-1.5 right-1.5 rounded-full" style={{ width: 7, height: 7, backgroundColor: "var(--accent)", boxShadow: "0 0 12px rgba(45,212,191,0.5)" }} />
                   )}
-                  <span className={isHub ? "text-5xl sm:text-6xl" : isSecondary ? "text-xl" : "text-base"} style={{ color: s.iconColor }}>
-                    {n.icon}
-                  </span>
-                  <span
-                    className={`leading-tight ${isHub ? "mt-2 text-[16px] sm:text-[18px] font-extrabold" : isSecondary ? "mt-1 text-[10px] font-bold" : "mt-1 text-[9px] font-semibold"}`}
-                    style={{ color: s.textColor }}
-                  >
-                    {n.label}
-                  </span>
-                  <span
-                    className={isHub ? "mt-1 text-[12px]" : "mt-0.5 text-[8px]"}
-                    style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.4 : 0.9 }}
-                  >
-                    {n.status}
-                  </span>
-                  {isHub && n.detail && (
-                    <span className="mt-0.5 text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.4 }}>
-                      {n.detail}
-                    </span>
+                  <span className="text-xl" style={{ color: s.iconColor }}>{n.icon}</span>
+                  <span className="mt-1 text-[12px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
+                  <span className="mt-0.5 text-[10px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
+                  {n.detail && (
+                    <span className="mt-0.5 text-[9px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>{n.detail}</span>
                   )}
                 </Link>
               );
@@ -497,8 +466,8 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ===== NEXT ACTION — the one decisive move ===== */}
-      <div className="px-4 sm:px-6 pt-8 pb-8 sm:pb-10">
+      {/* ===== NEXT ACTION — directly below map, tight spacing ===== */}
+      <div className="px-4 sm:px-6 pt-3 pb-8 sm:pb-10">
         <Link
           href={agentNextStep.href}
           className="group relative block rounded-3xl px-6 py-7 sm:py-8 transition-all hover:brightness-110 active:scale-[0.995] overflow-hidden"
