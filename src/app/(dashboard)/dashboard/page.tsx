@@ -173,13 +173,13 @@ export default async function DashboardPage() {
     if (toNode) relatedNodes.add(toNode);
   }
 
-  // Node positions — hub top-center, satellites spread wider for breathing room
+  // Node positions — compact, centered constellation
   const nodePos: Record<string, [number, number]> = {
-    wellbeing:    [50, 14],
-    vitals:       [82, 32],
-    documents:    [15, 50],
-    medications:  [85, 62],
-    lifestyle:    [50, 82],
+    wellbeing:    [50, 18],
+    vitals:       [78, 34],
+    documents:    [22, 46],
+    medications:  [78, 60],
+    lifestyle:    [50, 76],
   };
   const nodeCenters = nodePos;
 
@@ -261,42 +261,38 @@ export default async function DashboardPage() {
 
       {/* ===== AGENT PRESENCE ===== */}
       <section className="relative overflow-hidden" style={{ backgroundColor: "var(--bg-surface)" }}>
-        {/* Deep layered glow */}
         <div className="pointer-events-none absolute inset-0" style={{
-          background: "radial-gradient(ellipse 90% 80% at 50% 0%, rgba(45,212,191,0.09) 0%, transparent 60%)",
-        }} />
-        <div className="pointer-events-none absolute inset-0" style={{
-          background: "radial-gradient(circle 400px at 30% 80%, rgba(45,212,191,0.03) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(45,212,191,0.06) 0%, transparent 55%)",
         }} />
 
-        <div className="relative px-5 sm:px-8 pt-10 sm:pt-12 pb-5 sm:pb-6">
+        <div className="relative px-5 sm:px-8 pt-7 sm:pt-8 pb-3 sm:pb-4">
           <h1
-            className="text-[27px] sm:text-[36px] lg:text-[42px] font-extrabold leading-[1.08] tracking-tight"
+            className="text-[22px] sm:text-[28px] lg:text-[32px] font-bold leading-[1.15] tracking-tight"
             style={{ color: "var(--text-primary)" }}
           >
             {agentOpening}
           </h1>
 
           <p
-            className="mt-4 text-[16px] sm:text-[18px] leading-[1.55] max-w-xl"
+            className="mt-2 text-[14px] sm:text-[15px] leading-[1.5] max-w-lg"
             style={{ color: "var(--text-muted)" }}
           >
             {agentObservation}
           </p>
 
           {unlockMessage && (
-            <p className="mt-4 text-[14px] font-medium" style={{ color: "var(--accent)" }}>
+            <p className="mt-2 text-[13px] font-medium" style={{ color: "var(--accent)" }}>
               {unlockMessage}
             </p>
           )}
 
           {evidence.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {evidence.map((e) => (
                 <Link
                   key={e.label}
                   href={e.href}
-                  className="rounded-full px-3.5 py-1.5 text-[11px] font-semibold tracking-wide transition-all hover:scale-105"
+                  className="rounded-full px-3 py-1 text-[10px] font-semibold tracking-wide transition-all hover:scale-105"
                   style={{
                     backgroundColor: "rgba(45,212,191,0.08)",
                     color: "var(--accent)",
@@ -312,23 +308,15 @@ export default async function DashboardPage() {
       </section>
 
       {/* ===== HEALTH MAP ===== */}
-      <div className="relative px-2 sm:px-4 pt-0 pb-0">
-        {/* Visual bridge from agent zone — gradient bleeds down */}
-        <div className="pointer-events-none absolute inset-x-0 -top-12 h-24" style={{
-          background: "linear-gradient(to bottom, rgba(45,212,191,0.06) 0%, transparent 100%)",
-        }} />
-        {/* Map field glow — wide, centered on hub */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0" style={{
-          background: "radial-gradient(ellipse 90% 55% at 50% 16%, rgba(45,212,191,0.05) 0%, transparent 70%)",
-        }} />
+      <div className="relative px-3 sm:px-5 pt-0 pb-0">
         {mapHelper && (
-          <p className="mb-4 px-2 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--accent)", opacity: 0.4 }}>
+          <p className="mb-3 px-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--accent)", opacity: 0.35 }}>
             {mapHelper}
           </p>
         )}
 
-        {/* Map container — taller, wider */}
-        <div className="relative" style={{ height: "clamp(360px, 56vw, 480px)" }}>
+        {/* Map container — compact */}
+        <div className="relative" style={{ height: "clamp(280px, 42vw, 360px)" }}>
           {/* SVG — hub→satellite lines, clearly visible */}
           <svg
             className="pointer-events-none absolute inset-0 z-10"
@@ -361,28 +349,28 @@ export default async function DashboardPage() {
               const isVitals = n.key === "vitals";
               const isBridge = n.key === "lifestyle";
 
-              {/* Lifestyle — bridge pill at bottom, a real layer */}
+              {/* Lifestyle — bridge pill */}
               if (isBridge) {
                 return (
                   <Link
                     key={n.key}
                     href={n.href}
-                    className="absolute flex items-center gap-2.5 rounded-full px-5 py-2.5 transition-all hover:brightness-125"
+                    className="absolute flex items-center gap-2 rounded-full px-3.5 py-1.5 transition-all hover:brightness-125"
                     style={{
                       left: `${left}%`, top: `${top}%`,
                       transform: "translate(-50%, -50%)",
                       backgroundColor: "rgba(45,212,191,0.04)",
-                      border: "1px solid rgba(45,212,191,0.14)",
+                      border: "1px solid rgba(45,212,191,0.12)",
                     }}
                   >
-                    <span className="text-[14px]" style={{ color: s.iconColor }}>{n.icon}</span>
-                    <span className="text-[13px] font-semibold" style={{ color: s.textColor }}>{n.label}</span>
-                    <span className="text-[11px]" style={{ color: s.statusColor, opacity: 0.7 }}>{n.status}</span>
+                    <span className="text-[11px]" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="text-[11px] font-semibold" style={{ color: s.textColor }}>{n.label}</span>
+                    <span className="text-[9px]" style={{ color: s.statusColor, opacity: 0.6 }}>{n.status}</span>
                   </Link>
                 );
               }
 
-              {/* Hub — dominant center */}
+              {/* Hub — primary but not oversized */}
               if (isHub) {
                 const symptomsNode = modules.find((m) => m.key === "symptoms");
                 const symptomsText = symptomsNode?.status;
@@ -390,27 +378,24 @@ export default async function DashboardPage() {
                   <Link
                     key={n.key}
                     href={n.href}
-                    className="absolute flex flex-col items-center text-center rounded-[32px] px-6 py-6 sm:px-8 sm:py-7 transition-all hover:brightness-110 active:scale-[0.97]"
+                    className="absolute flex flex-col items-center text-center rounded-2xl px-4 py-4 sm:px-5 sm:py-4 transition-all hover:brightness-110 active:scale-[0.97]"
                     style={{
                       left: `${left}%`, top: `${top}%`,
                       transform: "translate(-50%, -50%)",
                       backgroundColor: s.bg,
                       border: s.border,
-                      boxShadow: `${resolveGlow(s.glow, rel)}, 0 0 60px rgba(45,212,191,0.06)`,
-                      width: "clamp(170px, 44%, 220px)",
+                      boxShadow: resolveGlow(s.glow, rel),
+                      width: "clamp(120px, 32%, 160px)",
                     }}
                   >
                     {rel && (
-                      <span className="absolute top-2 right-3 rounded-full" style={{ width: 10, height: 10, backgroundColor: "var(--accent)", boxShadow: "0 0 12px rgba(45,212,191,0.5)" }} />
+                      <span className="absolute top-1.5 right-2 rounded-full" style={{ width: 8, height: 8, backgroundColor: "var(--accent)", boxShadow: "0 0 10px rgba(45,212,191,0.5)" }} />
                     )}
-                    <span className="text-5xl sm:text-6xl" style={{ color: s.iconColor }}>{n.icon}</span>
-                    <span className="mt-2 text-[16px] sm:text-[18px] font-extrabold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
-                    <span className="mt-1 text-[12px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
-                    {n.detail && (
-                      <span className="mt-0.5 text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>{n.detail}</span>
-                    )}
+                    <span className="text-3xl" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="mt-1 text-[13px] sm:text-[14px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
+                    <span className="mt-0.5 text-[11px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
                     {symptomsText && (
-                      <span className="mt-1.5 text-[9px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>
+                      <span className="mt-1 text-[9px] font-medium" style={{ color: "rgba(255,255,255,0.3)" }}>
                         симптомы · {symptomsText}
                       </span>
                     )}
@@ -418,60 +403,54 @@ export default async function DashboardPage() {
                 );
               }
 
-              {/* Vitals — clear secondary, bigger than others */}
+              {/* Vitals — secondary */}
               if (isVitals) {
                 return (
                   <Link
                     key={n.key}
                     href={n.href}
-                    className="absolute flex flex-col items-center text-center rounded-2xl px-4 py-3.5 transition-all hover:brightness-110 active:scale-[0.97]"
+                    className="absolute flex flex-col items-center text-center rounded-xl px-3 py-2.5 transition-all hover:brightness-110 active:scale-[0.97]"
                     style={{
                       left: `${left}%`, top: `${top}%`,
                       transform: "translate(-50%, -50%)",
                       backgroundColor: s.bg,
                       border: s.border,
                       boxShadow: resolveGlow(s.glow, rel),
-                      width: "clamp(110px, 30%, 145px)",
+                      width: "clamp(90px, 24%, 120px)",
                     }}
                   >
                     {rel && (
-                      <span className="absolute top-1.5 right-2 rounded-full" style={{ width: 8, height: 8, backgroundColor: "var(--accent)", boxShadow: "0 0 12px rgba(45,212,191,0.5)" }} />
+                      <span className="absolute top-1 right-1.5 rounded-full" style={{ width: 6, height: 6, backgroundColor: "var(--accent)", boxShadow: "0 0 8px rgba(45,212,191,0.5)" }} />
                     )}
-                    <span className="text-2xl" style={{ color: s.iconColor }}>{n.icon}</span>
-                    <span className="mt-1 text-[13px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
-                    <span className="mt-0.5 text-[11px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
-                    {n.detail && (
-                      <span className="mt-0.5 text-[9px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>{n.detail}</span>
-                    )}
+                    <span className="text-lg" style={{ color: s.iconColor }}>{n.icon}</span>
+                    <span className="mt-0.5 text-[11px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
+                    <span className="mt-0.5 text-[10px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
                   </Link>
                 );
               }
 
-              {/* Tertiary nodes — documents (lighter/compact) vs medications (slightly bolder) */}
+              {/* Tertiary nodes */}
               const isMeds = n.key === "medications";
               return (
                 <Link
                   key={n.key}
                   href={n.href}
-                  className={`absolute flex flex-col items-center text-center rounded-2xl transition-all hover:brightness-110 active:scale-[0.97] ${isMeds ? "px-3.5 py-3.5" : "px-3 py-2.5"}`}
+                  className="absolute flex flex-col items-center text-center rounded-xl px-2.5 py-2 transition-all hover:brightness-110 active:scale-[0.97]"
                   style={{
                     left: `${left}%`, top: `${top}%`,
                     transform: "translate(-50%, -50%)",
                     backgroundColor: s.bg,
                     border: s.border,
                     boxShadow: resolveGlow(s.glow, rel),
-                    width: isMeds ? "clamp(105px, 28%, 132px)" : "clamp(92px, 24%, 115px)",
+                    width: isMeds ? "clamp(88px, 24%, 110px)" : "clamp(80px, 22%, 100px)",
                   }}
                 >
                   {rel && (
-                    <span className="absolute top-1.5 right-1.5 rounded-full" style={{ width: 7, height: 7, backgroundColor: "var(--accent)", boxShadow: "0 0 12px rgba(45,212,191,0.5)" }} />
+                    <span className="absolute top-1 right-1 rounded-full" style={{ width: 6, height: 6, backgroundColor: "var(--accent)", boxShadow: "0 0 8px rgba(45,212,191,0.5)" }} />
                   )}
-                  <span className={isMeds ? "text-xl" : "text-base"} style={{ color: s.iconColor }}>{n.icon}</span>
-                  <span className={`mt-1 leading-tight font-bold ${isMeds ? "text-[12px]" : "text-[11px]"}`} style={{ color: s.textColor }}>{n.label}</span>
-                  <span className="mt-0.5 text-[10px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
-                  {n.detail && (
-                    <span className="mt-0.5 text-[9px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>{n.detail}</span>
-                  )}
+                  <span className={isMeds ? "text-base" : "text-sm"} style={{ color: s.iconColor }}>{n.icon}</span>
+                  <span className="mt-0.5 text-[10px] font-bold leading-tight" style={{ color: s.textColor }}>{n.label}</span>
+                  <span className="mt-0.5 text-[9px]" style={{ color: s.statusColor, opacity: n.state === "empty" ? 0.5 : 0.9 }}>{n.status}</span>
                 </Link>
               );
             })}
@@ -479,41 +458,34 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ===== NEXT ACTION — directly below map ===== */}
-      <div className="px-4 sm:px-6 pt-2 pb-8 sm:pb-10">
+      {/* ===== NEXT ACTION ===== */}
+      <div className="px-4 sm:px-6 pt-2 pb-6 sm:pb-8">
         <Link
           href={agentNextStep.href}
-          className="group relative block rounded-3xl px-6 py-7 sm:py-8 transition-all hover:brightness-110 active:scale-[0.995] overflow-hidden"
+          className="group relative block rounded-2xl px-4 py-4 sm:py-5 transition-all hover:brightness-110 active:scale-[0.995] overflow-hidden"
           style={{
-            backgroundColor: "rgba(45,212,191,0.07)",
-            border: "2px solid rgba(45,212,191,0.30)",
-            boxShadow: "0 0 60px rgba(45,212,191,0.10), inset 0 1px 0 rgba(45,212,191,0.08)",
+            backgroundColor: "rgba(45,212,191,0.05)",
+            border: "1px solid rgba(45,212,191,0.20)",
           }}
         >
-          <div className="pointer-events-none absolute inset-0" style={{
-            background: "radial-gradient(ellipse 70% 100% at 10% 50%, rgba(45,212,191,0.08) 0%, transparent 60%)",
-          }} />
-          <div className="relative flex items-center gap-5">
+          <div className="relative flex items-center gap-4">
             <span
-              className="shrink-0 flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-bold transition-transform group-hover:scale-110"
-              style={{ backgroundColor: "rgba(45,212,191,0.15)", color: "var(--accent)" }}
+              className="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold transition-transform group-hover:scale-110"
+              style={{ backgroundColor: "rgba(45,212,191,0.12)", color: "var(--accent)" }}
             >
               →
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--accent)", opacity: 0.5 }}>
-                Следующий шаг
-              </p>
-              <p className="mt-1.5 text-[18px] sm:text-[21px] font-extrabold leading-tight" style={{ color: "var(--text-primary)" }}>
+              <p className="text-[15px] sm:text-[17px] font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
                 {agentNextStep.text}
               </p>
-              <p className="mt-1 text-[14px]" style={{ color: "var(--text-muted)" }}>
+              <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-muted)" }}>
                 {agentNextStep.sub}
               </p>
             </div>
             <span
-              className="shrink-0 text-2xl font-bold transition-transform group-hover:translate-x-2"
-              style={{ color: "var(--accent)", opacity: 0.35 }}
+              className="shrink-0 text-lg font-bold transition-transform group-hover:translate-x-1"
+              style={{ color: "var(--accent)", opacity: 0.3 }}
             >
               →
             </span>
