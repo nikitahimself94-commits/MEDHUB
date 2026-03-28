@@ -41,7 +41,7 @@ export default async function AiChatPage() {
       .select("id", { count: "exact", head: true })
       .eq("patient_id", patientId),
     supabase
-      .from("medical_profiles")
+      .from("medical_profile")
       .select("id")
       .eq("patient_id", patientId)
       .maybeSingle(),

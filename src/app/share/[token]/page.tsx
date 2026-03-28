@@ -60,7 +60,7 @@ export default async function SharePage({
       .limit(1)
       .maybeSingle(),
     supabase
-      .from("medical_profiles")
+      .from("medical_profile")
       .select("blood_type, rh_factor, allergies, chronic_conditions, emergency_info")
       .eq("patient_id", patientId)
       .maybeSingle(),

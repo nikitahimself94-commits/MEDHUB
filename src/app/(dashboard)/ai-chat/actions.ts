@@ -22,7 +22,7 @@ async function buildContextSnapshot(
     { data: docs },
   ] = await Promise.all([
     sb.from("profiles").select("display_name, role").eq("patient_id", patientId).limit(1).maybeSingle(),
-    sb.from("medical_profiles").select("blood_type, rh_factor, allergies, chronic_conditions, emergency_info").eq("patient_id", patientId).maybeSingle(),
+    sb.from("medical_profile").select("blood_type, rh_factor, allergies, chronic_conditions, emergency_info").eq("patient_id", patientId).maybeSingle(),
     sb.from("diary_entries").select("created_at, wellbeing_score, symptoms, pain_score, pain_location, sleep_hours, notes").eq("patient_id", patientId).order("created_at", { ascending: false }).limit(5),
     sb.from("vitals").select("vital_type, value, unit, measured_at").eq("patient_id", patientId).order("measured_at", { ascending: false }).limit(10),
     sb.from("medications").select("name, dosage, schedule, active, notes").eq("patient_id", patientId).eq("active", true).limit(20),

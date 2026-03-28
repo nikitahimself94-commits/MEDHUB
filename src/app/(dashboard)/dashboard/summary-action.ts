@@ -26,7 +26,7 @@ export async function generateHealthSummary(): Promise<string> {
     { data: docs },
   ] = await Promise.all([
     sb.from("profiles").select("display_name").eq("patient_id", patientId).limit(1).maybeSingle(),
-    sb.from("medical_profiles").select("blood_type, rh_factor, allergies, chronic_conditions").eq("patient_id", patientId).maybeSingle(),
+    sb.from("medical_profile").select("blood_type, rh_factor, allergies, chronic_conditions").eq("patient_id", patientId).maybeSingle(),
     sb.from("diary_entries").select("created_at, wellbeing_score, symptoms, pain_score, sleep_hours, notes").eq("patient_id", patientId).order("created_at", { ascending: false }).limit(7),
     sb.from("vitals").select("vital_type, value, unit, measured_at").eq("patient_id", patientId).order("measured_at", { ascending: false }).limit(10),
     sb.from("medications").select("name, dosage, schedule, active").eq("patient_id", patientId).eq("active", true).limit(20),
