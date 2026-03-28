@@ -360,16 +360,167 @@ function Concept3() {
 }
 
 // ============================================================
+// CONCEPT 4 — STRUCTURED HEALTH MAP
+// ============================================================
+function Concept4() {
+  const all = MOCK.modules;
+  const primary = all.filter(m => ["wellbeing", "vitals", "medications"].includes(m.key));
+  const secondary = all.filter(m => ["documents", "symptoms"].includes(m.key));
+  const tertiary = all.filter(m => ["lifestyle", "emotions"].includes(m.key));
+
+  // Completeness bar helper
+  const bar = (filled: boolean) => (
+    <div className="h-[3px] rounded-full flex-1" style={{ backgroundColor: filled ? "rgba(45,212,191,0.5)" : "rgba(255,255,255,0.06)" }} />
+  );
+
+  return (
+    <div className="px-4 pt-4 pb-5 space-y-0">
+
+      {/* ── HERO — minimal ── */}
+      <div className="pb-3">
+        <p className="text-[17px] font-bold leading-[1.3]" style={{ color: "var(--text-primary)" }}>{MOCK.greeting}</p>
+        <p className="mt-1 text-[12px] leading-[1.5]" style={{ color: "var(--text-muted)" }}>{MOCK.observation}</p>
+      </div>
+
+      {/* ── SYNTHESIS BLOCK — the intelligence center ── */}
+      <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(45,212,191,0.18)", backgroundColor: "rgba(45,212,191,0.02)" }}>
+        {/* Top bar — accent gradient */}
+        <div className="h-[3px]" style={{ background: "linear-gradient(90deg, rgba(45,212,191,0.5), rgba(45,212,191,0.15) 60%, rgba(245,158,11,0.3) 100%)" }} />
+
+        <div className="px-5 pt-4 pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(45,212,191,0.12)" }}>
+                <span className="text-sm" style={{ color: "var(--accent)" }}>♡</span>
+              </div>
+              <div>
+                <p className="text-[14px] font-bold" style={{ color: "var(--text-primary)" }}>Общее состояние</p>
+                <p className="text-[10px]" style={{ color: "var(--accent)", opacity: 0.6 }}>4 из 8 доменов с данными</p>
+              </div>
+            </div>
+            <div className="flex gap-[3px]">
+              {[true, true, true, true, false, false, false, false].map((f, i) => (
+                <div key={i} className="w-[18px]">{bar(f)}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* Signals */}
+          <div className="mt-4 space-y-2">
+            {MOCK.signals.map((sig, i) => (
+              <div key={i} className="flex items-start gap-2.5">
+                <div className="mt-[5px] shrink-0 h-[7px] w-[7px] rounded-full" style={{ backgroundColor: signalDot(sig.type).color, boxShadow: sig.type === "warning" ? `0 0 6px ${signalDot(sig.type).color}` : "none" }} />
+                <p className="text-[12px] leading-[1.45]" style={{ color: sig.type === "warning" ? "var(--text-primary)" : "var(--text-muted)" }}>
+                  {sig.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Next action — embedded in synthesis */}
+        <Link
+          href={MOCK.nextStep.href}
+          className="flex items-center gap-3 px-5 py-3 transition-all hover:brightness-125"
+          style={{ borderTop: "1px solid rgba(45,212,191,0.10)", backgroundColor: "rgba(45,212,191,0.04)" }}
+        >
+          <span className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold"
+            style={{ backgroundColor: "rgba(45,212,191,0.15)", color: "var(--accent)" }}>→</span>
+          <div className="flex-1">
+            <p className="text-[12px] font-bold" style={{ color: "var(--text-primary)" }}>{MOCK.nextStep.text}</p>
+            <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{MOCK.nextStep.sub}</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* ── PRIMARY DOMAINS — full-width rich cards ── */}
+      <div className="pt-3 space-y-[6px]">
+        <p className="text-[9px] font-bold uppercase tracking-[0.14em] px-1 pb-1" style={{ color: "var(--accent)", opacity: 0.35 }}>Ключевые домены</p>
+        {primary.map((m) => (
+          <Link key={m.key} href={m.href}
+            className="flex items-center gap-3 rounded-xl px-4 py-3 transition-all hover:brightness-110"
+            style={{ backgroundColor: "rgba(45,212,191,0.035)", border: "1px solid rgba(45,212,191,0.14)" }}>
+            <div className="shrink-0 h-9 w-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "rgba(45,212,191,0.08)" }}>
+              <span className="text-base" style={{ color: "var(--accent)" }}>{m.icon}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>{m.label}</span>
+                <span className="text-[10px] font-medium" style={{ color: "var(--accent)" }}>{m.status}</span>
+              </div>
+              {m.detail && <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{m.detail}</p>}
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* ── SECONDARY DOMAINS — 2-col, medium weight ── */}
+      <div className="pt-3">
+        <div className="grid grid-cols-2 gap-[6px]">
+          {secondary.map((m) => (
+            <Link key={m.key} href={m.href}
+              className="rounded-xl px-3.5 py-3 transition-all hover:brightness-110"
+              style={{ backgroundColor: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.04)" }}>
+                  <span className="text-xs" style={{ color: m.active ? "var(--accent)" : "rgba(255,255,255,0.3)" }}>{m.icon}</span>
+                </div>
+                <span className="text-[12px] font-bold" style={{ color: m.active ? "var(--text-primary)" : "rgba(255,255,255,0.4)" }}>{m.label}</span>
+              </div>
+              <p className="text-[10px]" style={{ color: m.active ? "var(--text-muted)" : "rgba(255,255,255,0.25)" }}>
+                {m.status}{m.detail ? ` · ${m.detail}` : ""}
+              </p>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ── TERTIARY — compact row, low priority ── */}
+      <div className="pt-2">
+        <div className="rounded-xl px-4 py-2.5 flex items-center justify-between"
+          style={{ backgroundColor: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}>
+          {tertiary.map((m) => (
+            <Link key={m.key} href={m.href} className="flex items-center gap-2 transition-all hover:brightness-125">
+              <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.25)" }}>{m.icon}</span>
+              <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>{m.label}</span>
+              <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.2)" }}>{m.status}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ── GAPS — what's missing ── */}
+      <div className="pt-2">
+        <div className="flex items-center gap-2 px-1">
+          <span className="text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--text-muted)", opacity: 0.25 }}>не хватает</span>
+          <div className="flex-1 h-px" style={{ backgroundColor: "rgba(255,255,255,0.04)" }} />
+        </div>
+        <div className="mt-1.5 px-1 flex flex-wrap gap-2">
+          {MOCK.gaps.map((g, i) => (
+            <span key={i} className="text-[10px] rounded-full px-2.5 py-0.5"
+              style={{ color: "rgba(255,255,255,0.3)", backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+              {g}
+            </span>
+          ))}
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+// ============================================================
 // SWITCHER
 // ============================================================
 const concepts = [
   { id: 1, name: "Constellation", component: Concept1 },
   { id: 2, name: "Control Panel", component: Concept2 },
   { id: 3, name: "Hybrid", component: Concept3 },
+  { id: 4, name: "Structured Map", component: Concept4 },
 ];
 
 export function VisualExplore({ variant }: { variant?: number }) {
-  const [active, setActive] = useState(variant ?? 3);
+  const [active, setActive] = useState(variant ?? 4);
   const ActiveConcept = concepts.find((c) => c.id === active)?.component ?? Concept1;
 
   return (
