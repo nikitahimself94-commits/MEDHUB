@@ -137,30 +137,25 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
                   </div>
                 )}
 
-                {/* AI actions — elevated */}
+                {/* AI actions — primary controls */}
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {doc.file_url && !hasParse && (
                     <ParseDocumentButton documentId={doc.id} />
                   )}
+                  {!doc.file_url && !hasParse && (
+                    <p className="text-[12px]" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
+                      Загрузите файл — AI сможет разобрать документ
+                    </p>
+                  )}
                   {hasParse && (
                     <span
-                      className="rounded-full px-2.5 py-1 text-xs font-medium"
-                      style={{ backgroundColor: "var(--accent-muted)", color: "var(--accent)" }}
+                      className="rounded-full px-2.5 py-1 text-[11px] font-medium"
+                      style={{ backgroundColor: "rgba(45,212,191,0.08)", color: "var(--accent)" }}
                     >
                       Разобран
                     </span>
                   )}
-                  {!hasOpinion && (
-                    <SecondOpinionButton documentId={doc.id} />
-                  )}
-                  {hasOpinion && (
-                    <span
-                      className="rounded-full px-2.5 py-1 text-xs font-medium"
-                      style={{ backgroundColor: "var(--bg-surface-hover)", color: "var(--text-muted)" }}
-                    >
-                      Второе мнение получено
-                    </span>
-                  )}
+                  <SecondOpinionButton documentId={doc.id} hasExisting={hasOpinion} />
                 </div>
 
                 {/* Secondary actions */}
@@ -172,35 +167,26 @@ export function DocumentList({ documents, parseMap, opinionMap, categories }: Pr
                 </div>
               </div>
 
-              {/* AI results — full-width blocks below the card body */}
+              {/* AI results — main value zone */}
               {hasAiResults && (
-                <div className="border-t" style={{ borderColor: "var(--border)" }}>
+                <div className="px-4 pb-4 space-y-3">
                   {parseMap[doc.id] && (
-                    <div className="p-4">
-                      <ParseResult parse={parseMap[doc.id]} />
-                    </div>
+                    <ParseResult parse={parseMap[doc.id]} />
                   )}
                   {opinionMap[doc.id] && (
-                    <div className="p-4 pt-0">
-                      <OpinionResult opinion={opinionMap[doc.id]} />
-                    </div>
+                    <OpinionResult opinion={opinionMap[doc.id]} />
                   )}
-                  <div
-                    className="px-4 pb-4 pt-1 border-t"
-                    style={{ borderColor: "var(--border)" }}
+                  <Link
+                    href="/ai-chat"
+                    className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-medium transition hover:brightness-110"
+                    style={{
+                      backgroundColor: "rgba(45,212,191,0.08)",
+                      color: "var(--accent)",
+                      border: "1px solid rgba(45,212,191,0.15)",
+                    }}
                   >
-                    <Link
-                      href="/ai-chat"
-                      className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition hover:shadow-sm"
-                      style={{
-                        backgroundColor: "var(--accent-muted)",
-                        color: "var(--accent)",
-                        border: "1px solid rgba(45,212,191,0.15)",
-                      }}
-                    >
-                      Обсудить с AI-помощником →
-                    </Link>
-                  </div>
+                    Обсудить с AI-помощником →
+                  </Link>
                 </div>
               )}
             </div>

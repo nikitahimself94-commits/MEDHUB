@@ -1,59 +1,74 @@
 import type { DocumentParse } from "@/types/database";
 
-const STATUS_COLORS: Record<string, React.CSSProperties> = {
-  норма: { color: "var(--accent)" },
-  повышен: { color: "var(--amber)" },
-  понижен: { color: "var(--amber)" },
-  внимание: { color: "var(--amber)" },
+const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
+  норма: { bg: "rgba(45,212,191,0.10)", color: "var(--accent)" },
+  повышен: { bg: "rgba(245,158,11,0.10)", color: "var(--amber)" },
+  понижен: { bg: "rgba(245,158,11,0.10)", color: "var(--amber)" },
+  внимание: { bg: "rgba(245,158,11,0.10)", color: "var(--amber)" },
 };
 
-const fallbackStyle: React.CSSProperties = { color: "var(--text-muted)" };
+const fallbackStyle = { bg: "rgba(255,255,255,0.05)", color: "var(--text-muted)" };
 
 export function ParseResult({ parse }: { parse: DocumentParse }) {
-  return (
-    <div className="mt-3 rounded p-3" style={{ border: "1px solid var(--border)", backgroundColor: "var(--accent-muted)" }}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-accent">
-        AI-разбор
-      </p>
+  // Compact metadata line
+  const metaParts = [parse.doc_type, parse.lab_or_clinic];
+  if (parse.doc_date) {
+    metaParts.push(new Date(parse.doc_date + "T00:00:00").toLocaleDateString("ru-RU"));
+  }
+  const metaLine = metaParts.filter(Boolean).join(" · ");
 
-      <div className="mt-2 space-y-1 text-sm" style={{ color: "var(--text-primary)" }}>
-        {parse.doc_type && (
-          <p><span className="font-medium" style={{ color: "var(--text-muted)" }}>Тип:</span> {parse.doc_type}</p>
-        )}
-        {parse.doc_date && (
-          <p><span className="font-medium" style={{ color: "var(--text-muted)" }}>Дата:</span> {new Date(parse.doc_date + "T00:00:00").toLocaleDateString("ru-RU")}</p>
-        )}
-        {parse.lab_or_clinic && (
-          <p><span className="font-medium" style={{ color: "var(--text-muted)" }}>Лаборатория/клиника:</span> {parse.lab_or_clinic}</p>
-        )}
+  return (
+    <div className="rounded-xl p-4" style={{ border: "1px solid rgba(45,212,191,0.15)", backgroundColor: "rgba(45,212,191,0.04)" }}>
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-[11px] font-bold uppercase tracking-[0.15em]" style={{ color: "var(--accent)" }}>
+          AI-разбор
+        </p>
+        <p className="text-[10px] shrink-0" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
+          {new Date(parse.created_at).toLocaleString("ru-RU")}
+        </p>
       </div>
 
+      {metaLine && (
+        <p className="mt-2 text-[13px] font-medium" style={{ color: "var(--text-primary)" }}>
+          {metaLine}
+        </p>
+      )}
+
       {parse.key_findings.length > 0 && (
-        <div className="mt-2">
-          <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Ключевые показатели:</p>
-          <ul className="mt-1 space-y-0.5">
-            {parse.key_findings.map((f, i) => (
-              <li key={i} className="text-sm">
-                <span className="font-medium">{f.name}:</span>{" "}
-                {f.value}
+        <div className="mt-3 space-y-1.5">
+          {parse.key_findings.map((f, i) => {
+            const st = (f.status ? STATUS_STYLE[f.status] : null) || fallbackStyle;
+            return (
+              <div
+                key={i}
+                className="flex items-center gap-2 rounded-lg px-3 py-1.5"
+                style={{ backgroundColor: "rgba(255,255,255,0.03)" }}
+              >
+                <span className="flex-1 text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
+                  {f.name}
+                </span>
+                <span className="shrink-0 text-[13px]" style={{ color: "var(--text-muted)" }}>
+                  {f.value}
+                </span>
                 {f.status && (
-                  <span className="ml-1 text-xs font-medium" style={STATUS_COLORS[f.status] || fallbackStyle}>
-                    ({f.status})
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                    style={{ backgroundColor: st.bg, color: st.color }}
+                  >
+                    {f.status}
                   </span>
                 )}
-              </li>
-            ))}
-          </ul>
+              </div>
+            );
+          })}
         </div>
       )}
 
       {parse.summary && (
-        <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>{parse.summary}</p>
+        <p className="mt-3 text-[13px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+          {parse.summary}
+        </p>
       )}
-
-      <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-        Разбор от {new Date(parse.created_at).toLocaleString("ru-RU")}
-      </p>
     </div>
   );
 }

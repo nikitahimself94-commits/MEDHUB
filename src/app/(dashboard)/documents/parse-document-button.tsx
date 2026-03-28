@@ -25,11 +25,19 @@ export function ParseDocumentButton({ documentId }: { documentId: string }) {
         type="button"
         onClick={handleParse}
         disabled={parsing}
-        className="text-sm text-accent hover:brightness-90 disabled:opacity-50"
+        className={`rounded-full px-4 py-1.5 text-[13px] font-semibold transition-all ${
+          parsing ? "animate-pulse" : "hover:brightness-110 active:scale-[0.97]"
+        }`}
+        style={{
+          backgroundColor: "rgba(45,212,191,0.12)",
+          color: "var(--accent)",
+          border: "1px solid rgba(45,212,191,0.25)",
+          opacity: parsing ? 0.7 : 1,
+        }}
       >
-        {parsing ? "Анализ..." : "AI-разбор"}
+        {parsing ? "Анализирую..." : "AI-разбор"}
       </button>
-      {error && <p className="mt-1 text-xs" style={{ color: "var(--amber)" }}>{error}</p>}
+      {error && <p className="mt-1.5 text-xs" style={{ color: "var(--amber)" }}>{error}</p>}
     </div>
   );
 }

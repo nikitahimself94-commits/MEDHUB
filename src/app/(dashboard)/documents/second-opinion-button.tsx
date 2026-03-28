@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { generateSecondOpinion } from "./actions";
 
-export function SecondOpinionButton({ documentId }: { documentId: string }) {
+interface Props {
+  documentId: string;
+  hasExisting?: boolean;
+}
+
+export function SecondOpinionButton({ documentId, hasExisting }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -25,12 +30,19 @@ export function SecondOpinionButton({ documentId }: { documentId: string }) {
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="text-sm disabled:opacity-50"
-        style={{ color: "var(--text-muted)" }}
+        className={`rounded-full px-4 py-1.5 text-[13px] font-semibold transition-all ${
+          loading ? "animate-pulse" : "hover:brightness-110 active:scale-[0.97]"
+        }`}
+        style={{
+          backgroundColor: "rgba(255,255,255,0.04)",
+          color: "var(--text-muted)",
+          border: "1px solid rgba(255,255,255,0.10)",
+          opacity: loading ? 0.7 : 1,
+        }}
       >
-        {loading ? "Анализ..." : "Второе мнение"}
+        {loading ? "Анализирую..." : hasExisting ? "Обновить мнение" : "Второе мнение"}
       </button>
-      {error && <p className="mt-1 text-xs" style={{ color: "var(--amber)" }}>{error}</p>}
+      {error && <p className="mt-1.5 text-xs" style={{ color: "var(--amber)" }}>{error}</p>}
     </div>
   );
 }
