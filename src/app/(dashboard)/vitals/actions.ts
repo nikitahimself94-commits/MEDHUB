@@ -12,9 +12,13 @@ export async function createVital(formData: FormData) {
   const measuredAt = (formData.get("measured_at") as string) || new Date().toISOString();
   const notes = (formData.get("notes") as string) || null;
 
+  const { data: activeConcern } = await supabase.from("active_concerns").select("id, status").eq("patient_id", patientId).maybeSingle();
+  const concernId = activeConcern?.status === "active" ? activeConcern.id : null;
+
   const { error } = await supabase.from("vitals").insert({
     patient_id: patientId,
     created_by: userId,
+    concern_id: concernId,
     vital_type: vitalType,
     value,
     unit,

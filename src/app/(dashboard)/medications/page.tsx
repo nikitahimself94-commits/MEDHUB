@@ -1,6 +1,9 @@
 import { getSessionPatient } from "@/lib/get-patient-id";
 import { getLocalDayStart } from "@/lib/local-day";
+import { getCompanionContext } from "../_shared/get-companion-context";
+import { CompanionContext } from "@/components/companion-context";
 import type { Medication } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { MedicationForm } from "./medication-form";
 import { IntakeButton } from "./intake-button";
 import { ToggleActiveButton } from "./toggle-active-button";
@@ -84,9 +87,16 @@ export default async function MedicationsPage() {
     return new Date(d).toLocaleDateString("ru-RU");
   }
 
+  const companion = await getCompanionContext(supabase as unknown as SupabaseClient, patientId, "/medications");
+
   return (
     <div>
       <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Лекарства</h2>
+      {companion && (
+        <div className="mt-3">
+          <CompanionContext concernTitle={companion.concernTitle} reason={companion.reason} missingSignal={companion.missingSignal} />
+        </div>
+      )}
 
       {/* Agent state block */}
       <div

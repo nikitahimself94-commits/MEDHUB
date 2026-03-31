@@ -9,6 +9,16 @@ interface MedicalProfileData {
   allergies: { name: string; reaction: string; severity: string }[];
   chronic_conditions: string[];
   emergency_info: string | null;
+  sex: string | null;
+  birth_date: string | null;
+  height_cm: number | null;
+  baseline_weight_kg: number | null;
+  family_risk_categories: string[];
+  smoking_status: string;
+  alcohol_status: string;
+  functional_baseline: string | null;
+  diagnoses: string[];
+  operations_hospitalizations: string[];
 }
 
 const BLOOD_TYPES = ["", "I (O)", "II (A)", "III (B)", "IV (AB)"];
@@ -27,6 +37,16 @@ export function MedicalProfileForm({
   const [chronic, setChronic] = useState<string[]>(initialData?.chronic_conditions ?? []);
   const [newChronic, setNewChronic] = useState("");
   const [emergencyInfo, setEmergencyInfo] = useState(initialData?.emergency_info ?? "");
+  const [sex, setSex] = useState(initialData?.sex ?? "");
+  const [birthDate, setBirthDate] = useState(initialData?.birth_date ?? "");
+  const [heightCm, setHeightCm] = useState(initialData?.height_cm?.toString() ?? "");
+  const [baselineWeight, setBaselineWeight] = useState(initialData?.baseline_weight_kg?.toString() ?? "");
+  const [familyRisk, setFamilyRisk] = useState((initialData?.family_risk_categories ?? []).join(", "));
+  const [smokingStatus, setSmokingStatus] = useState(initialData?.smoking_status ?? "unknown");
+  const [alcoholStatus, setAlcoholStatus] = useState(initialData?.alcohol_status ?? "unknown");
+  const [functionalBaseline, setFunctionalBaseline] = useState(initialData?.functional_baseline ?? "");
+  const [diagnoses, setDiagnoses] = useState((initialData?.diagnoses ?? []).join("\n"));
+  const [opsHosp, setOpsHosp] = useState((initialData?.operations_hospitalizations ?? []).join("\n"));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -69,6 +89,16 @@ export function MedicalProfileForm({
     formData.set("allergies", JSON.stringify(allergies.filter((a) => a.name.trim())));
     formData.set("chronic_conditions", JSON.stringify(chronic));
     formData.set("emergency_info", emergencyInfo);
+    formData.set("sex", sex);
+    formData.set("birth_date", birthDate);
+    formData.set("height_cm", heightCm);
+    formData.set("baseline_weight_kg", baselineWeight);
+    formData.set("family_risk_categories", familyRisk);
+    formData.set("smoking_status", smokingStatus);
+    formData.set("alcohol_status", alcoholStatus);
+    formData.set("functional_baseline", functionalBaseline);
+    formData.set("diagnoses", diagnoses);
+    formData.set("operations_hospitalizations", opsHosp);
 
     try {
       await upsertMedicalProfile(formData);
@@ -215,6 +245,109 @@ export function MedicalProfileForm({
           >
             Добавить
           </button>
+        </div>
+      </div>
+
+      {/* ── Baseline ── */}
+      <div className="pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+        <p className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Базовый профиль</p>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+          <div>
+            <label className={labelClass} style={labelStyle}>Пол</label>
+            <select value={sex} onChange={(e) => setSex(e.target.value)} className={inputClass} style={inputStyle}>
+              <option value="">— не указан —</option>
+              <option value="male">Мужской</option>
+              <option value="female">Женский</option>
+              <option value="other">Другой</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelClass} style={labelStyle}>Дата рождения</label>
+            <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className={inputClass} style={inputStyle} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 mt-3">
+          <div>
+            <label className={labelClass} style={labelStyle}>Рост (см)</label>
+            <input type="number" min={50} max={250} value={heightCm} onChange={(e) => setHeightCm(e.target.value)} placeholder="170" className={inputClass} style={inputStyle} />
+          </div>
+          <div>
+            <label className={labelClass} style={labelStyle}>Базовый вес (кг)</label>
+            <input type="number" min={20} max={300} step={0.1} value={baselineWeight} onChange={(e) => setBaselineWeight(e.target.value)} placeholder="70" className={inputClass} style={inputStyle} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 mt-3">
+          <div>
+            <label className={labelClass} style={labelStyle}>Курение</label>
+            <select value={smokingStatus} onChange={(e) => setSmokingStatus(e.target.value)} className={inputClass} style={inputStyle}>
+              <option value="unknown">— не указано —</option>
+              <option value="never">Никогда</option>
+              <option value="former">В прошлом</option>
+              <option value="current">Курю</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelClass} style={labelStyle}>Алкоголь</label>
+            <select value={alcoholStatus} onChange={(e) => setAlcoholStatus(e.target.value)} className={inputClass} style={inputStyle}>
+              <option value="unknown">— не указано —</option>
+              <option value="none">Не употребляю</option>
+              <option value="moderate">Умеренно</option>
+              <option value="heavy">Часто</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <label className={labelClass} style={labelStyle}>Семейные факторы риска</label>
+          <input
+            value={familyRisk}
+            onChange={(e) => setFamilyRisk(e.target.value)}
+            placeholder="Диабет, гипертония, онкология... (через запятую)"
+            className={inputClass}
+            style={inputStyle}
+          />
+          <p className="mt-1 text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>Перечислите через запятую</p>
+        </div>
+
+        <div className="mt-3">
+          <label className={labelClass} style={labelStyle}>Функциональный базовый уровень</label>
+          <textarea
+            value={functionalBaseline}
+            onChange={(e) => setFunctionalBaseline(e.target.value)}
+            rows={2}
+            placeholder="Активность, подвижность, самостоятельность..."
+            className={inputClass}
+            style={inputStyle}
+          />
+        </div>
+
+        <div className="mt-3">
+          <label className={labelClass} style={labelStyle}>Диагнозы</label>
+          <textarea
+            value={diagnoses}
+            onChange={(e) => setDiagnoses(e.target.value)}
+            rows={3}
+            placeholder={"Гипертония\nСахарный диабет 2 типа\nАстма"}
+            className={inputClass}
+            style={inputStyle}
+          />
+          <p className="mt-1 text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>По одному на строку</p>
+        </div>
+
+        <div className="mt-3">
+          <label className={labelClass} style={labelStyle}>Операции и госпитализации</label>
+          <textarea
+            value={opsHosp}
+            onChange={(e) => setOpsHosp(e.target.value)}
+            rows={3}
+            placeholder={"Аппендэктомия, 2018\nГоспитализация пневмония, 2021"}
+            className={inputClass}
+            style={inputStyle}
+          />
+          <p className="mt-1 text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.5 }}>По одному на строку</p>
         </div>
       </div>
 

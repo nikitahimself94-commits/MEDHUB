@@ -27,6 +27,22 @@ export async function upsertMedicalProfile(formData: FormData) {
     chronicConditions = [];
   }
 
+  const sex = (formData.get("sex") as string) || null;
+  const birthDate = (formData.get("birth_date") as string) || null;
+  const heightRaw = formData.get("height_cm") as string;
+  const heightCm = heightRaw ? parseInt(heightRaw, 10) || null : null;
+  const weightRaw = formData.get("baseline_weight_kg") as string;
+  const baselineWeightKg = weightRaw ? parseFloat(weightRaw) || null : null;
+  const familyRiskRaw = (formData.get("family_risk_categories") as string) || "";
+  const familyRiskCategories = familyRiskRaw.split(",").map((s) => s.trim()).filter(Boolean);
+  const smokingStatus = (formData.get("smoking_status") as string) || "unknown";
+  const alcoholStatus = (formData.get("alcohol_status") as string) || "unknown";
+  const functionalBaseline = (formData.get("functional_baseline") as string) || null;
+  const diagnosesRaw = (formData.get("diagnoses") as string) || "";
+  const diagnoses = diagnosesRaw.split("\n").map((s) => s.trim()).filter(Boolean);
+  const opsRaw = (formData.get("operations_hospitalizations") as string) || "";
+  const operationsHospitalizations = opsRaw.split("\n").map((s) => s.trim()).filter(Boolean);
+
   const row = {
     patient_id: patientId,
     blood_type: bloodType,
@@ -34,6 +50,16 @@ export async function upsertMedicalProfile(formData: FormData) {
     allergies,
     chronic_conditions: chronicConditions,
     emergency_info: emergencyInfo,
+    sex,
+    birth_date: birthDate,
+    height_cm: heightCm,
+    baseline_weight_kg: baselineWeightKg,
+    family_risk_categories: familyRiskCategories,
+    smoking_status: smokingStatus,
+    alcohol_status: alcoholStatus,
+    functional_baseline: functionalBaseline,
+    diagnoses,
+    operations_hospitalizations: operationsHospitalizations,
     updated_at: new Date().toISOString(),
   };
 

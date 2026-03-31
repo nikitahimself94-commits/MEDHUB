@@ -15,6 +15,10 @@ export function MedicationForm({ medCount }: { medCount: number }) {
   const [endDate, setEndDate] = useState("");
   const [active, setActive] = useState(true);
   const [notes, setNotes] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [effect, setEffect] = useState("");
+  const [sideEffects, setSideEffects] = useState("");
+  const [therapyChanges, setTherapyChanges] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [reaction, setReaction] = useState<MedReaction | null>(null);
@@ -38,6 +42,10 @@ export function MedicationForm({ medCount }: { medCount: number }) {
     formData.set("end_date", endDate);
     formData.set("active", String(active));
     formData.set("notes", notes);
+    formData.set("purpose", purpose);
+    formData.set("effect", effect);
+    formData.set("side_effects", sideEffects);
+    formData.set("therapy_changes", therapyChanges);
 
     try {
       await createMedication(formData);
@@ -57,6 +65,10 @@ export function MedicationForm({ medCount }: { medCount: number }) {
       setEndDate("");
       setActive(true);
       setNotes("");
+      setPurpose("");
+      setEffect("");
+      setSideEffects("");
+      setTherapyChanges("");
       setOpen(false);
       setTimeout(() => { setSaved(false); setReaction(null); }, 5000);
     } catch (err: unknown) {
@@ -199,6 +211,26 @@ export function MedicationForm({ medCount }: { medCount: number }) {
           className={inputClass}
           style={inputStyle}
         />
+      </div>
+
+      <div>
+        <label className={labelClass} style={labelStyle}>Назначение / Цель приёма</label>
+        <input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Для снижения давления" className={inputClass} style={inputStyle} />
+      </div>
+
+      <div>
+        <label className={labelClass} style={labelStyle}>Эффект</label>
+        <input value={effect} onChange={(e) => setEffect(e.target.value)} placeholder="Давление снизилось, стало стабильнее" className={inputClass} style={inputStyle} />
+      </div>
+
+      <div>
+        <label className={labelClass} style={labelStyle}>Побочные эффекты</label>
+        <input value={sideEffects} onChange={(e) => setSideEffects(e.target.value)} placeholder="Сухой кашель, головокружение" className={inputClass} style={inputStyle} />
+      </div>
+
+      <div>
+        <label className={labelClass} style={labelStyle}>Изменения в терапии</label>
+        <textarea value={therapyChanges} onChange={(e) => setTherapyChanges(e.target.value)} rows={2} placeholder="Доза увеличена с 5мг до 10мг, 15.03.2026" className={inputClass} style={inputStyle} />
       </div>
 
       <div className="flex items-center gap-4">

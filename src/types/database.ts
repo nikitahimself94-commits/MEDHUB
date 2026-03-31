@@ -1,4 +1,4 @@
-// Supabase database types — manually synced with migrations 00001–00027
+// Supabase database types — manually synced with migrations 00001–00038
 // Data ownership: all product tables reference patient_id, not user_id
 // created_by (optional) tracks which auth user created a record (audit only, not access control)
 
@@ -24,6 +24,18 @@ export interface Profile {
   companion_rotation_state: Record<string, number[]> | null; // migration 00027
 }
 
+export type ConcernStatus = "active" | "paused" | "resolved";
+
+export interface ActiveConcern {
+  id: string;
+  patient_id: string;
+  title: string;
+  key_question: string;
+  status: ConcernStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Allergy {
   name: string;
   reaction: string;
@@ -38,7 +50,29 @@ export interface MedicalProfile {
   allergies: Allergy[];
   chronic_conditions: string[];
   emergency_info: string | null;
+  // Baseline fields (migration 00033)
+  sex: string | null;
+  birth_date: string | null;
+  height_cm: number | null;
+  baseline_weight_kg: number | null;
+  family_risk_categories: string[];
+  smoking_status: string;
+  alcohol_status: string;
+  functional_baseline: string | null;
+  diagnoses: string[];
+  operations_hospitalizations: string[];
   updated_at: string;
+}
+
+export interface StructuredSymptom {
+  name: string;
+  started_at_text: string;
+  duration_text: string;
+  frequency: string;
+  intensity: string;
+  triggers: string;
+  associated_symptoms: string;
+  functional_impact: string;
 }
 
 export interface DiaryEntry {
@@ -48,12 +82,33 @@ export interface DiaryEntry {
   created_at: string;
   wellbeing_score: number;
   symptoms: string[];
+  structured_symptoms: StructuredSymptom[];
   pain_location: string | null;
   pain_score: number | null;
   sleep_hours: number | null;
   sleep_quality: number | null;
   notes: string | null;
   tags: string[];
+  lifestyle_context: LifestyleContext;
+  exposures: Exposure[];
+  concern_id: string | null;
+}
+
+export type ExposureType = "food" | "new_medication" | "infection" | "stress" | "sleep_loss" | "physical_load" | "allergen_environment" | "travel" | "cycle" | "other";
+
+export interface Exposure {
+  type: ExposureType;
+  details: string;
+}
+
+export interface LifestyleContext {
+  activity_text?: string;
+  caffeine_text?: string;
+  nicotine_text?: string;
+  alcohol_text?: string;
+  food_patterns?: string;
+  work_schedule?: string;
+  cycle_context?: string;
 }
 
 export interface Document {
@@ -71,6 +126,7 @@ export interface Document {
   status: "normal" | "review" | "abnormal";
   tags: string[];
   notes: string | null;
+  concern_id: string | null;
 }
 
 export interface Medication {
@@ -84,6 +140,10 @@ export interface Medication {
   end_date: string | null;
   active: boolean;
   notes: string | null;
+  purpose: string;
+  effect: string;
+  side_effects: string;
+  therapy_changes: string;
   created_at: string;
 }
 
@@ -113,6 +173,7 @@ export interface Vital {
   measured_at: string;
   notes: string | null;
   created_at: string;
+  concern_id: string | null;
 }
 
 export type TimelineEventType =
@@ -183,7 +244,8 @@ export type AiFeatureName =
   | "document_parse"
   | "document_second_opinion"
   | "doctor_visit_prep"
-  | "health_summary";
+  | "health_summary"
+  | "hypothesis_generation";
 
 export interface AiUsageEvent {
   id: string;

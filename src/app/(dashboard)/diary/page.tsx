@@ -1,7 +1,9 @@
 import { getSessionPatient } from "@/lib/get-patient-id";
-import { ModuleHelp } from "@/components/module-help";
+import { getCompanionContext } from "../_shared/get-companion-context";
+import { CompanionContext } from "@/components/companion-context";
 import { DiaryEntryForm } from "./diary-entry-form";
 import { DeleteDiaryButton } from "./delete-diary-button";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface DiaryEntry {
   id: string;
@@ -28,16 +30,31 @@ export default async function DiaryPage() {
 
   const diaryEntries: DiaryEntry[] = entries ?? [];
 
+  const companion = await getCompanionContext(supabase as unknown as SupabaseClient, patientId, "/diary");
+
   return (
     <div>
       <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Дневник самочувствия</h2>
-      <div className="mt-3">
-        <ModuleHelp
-          title="Ежедневный дневник здоровья"
-          description="Записывайте своё самочувствие, симптомы, уровень боли и качество сна каждый день."
-          benefit="Регулярные записи позволяют отслеживать динамику состояния и замечать закономерности, которые сложно уловить по памяти."
-        />
+      {/* Agent framing */}
+      <div className="mt-3 rounded-xl px-4 py-3.5" style={{ backgroundColor: "rgba(45,212,191,0.03)", border: "1px solid rgba(45,212,191,0.08)" }}>
+        <div className="flex items-start gap-3">
+          <div className="shrink-0 mt-0.5 h-2 w-2 rounded-full" style={{ backgroundColor: "var(--accent)", opacity: diaryEntries.length > 0 ? 0.7 : 0.4 }} />
+          <div>
+            <p className="text-[13px] font-medium leading-snug" style={{ color: "var(--text-primary)" }}>
+              {diaryEntries.length === 0
+                ? "Мне нужны записи, чтобы начать отслеживать динамику."
+                : diaryEntries.length <= 3
+                  ? `Уже ${diaryEntries.length} ${diaryEntries.length === 1 ? "запись" : diaryEntries.length <= 4 ? "записи" : "записей"}. Чем регулярнее фиксируешь — тем точнее я вижу паттерны.`
+                  : "Записи помогают мне находить связи между самочувствием, симптомами и внешними факторами."}
+            </p>
+          </div>
+        </div>
       </div>
+      {companion && (
+        <div className="mt-2">
+          <CompanionContext concernTitle={companion.concernTitle} reason={companion.reason} missingSignal={companion.missingSignal} />
+        </div>
+      )}
 
       <div className="mt-6">
         <DiaryEntryForm entryCount={diaryEntries.length} />
@@ -45,7 +62,11 @@ export default async function DiaryPage() {
 
       <div className="mt-8 space-y-4">
         {diaryEntries.length === 0 && (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Записей пока нет</p>
+          <div className="rounded-lg px-4 py-4 text-center" style={{ border: "1px dashed rgba(255,255,255,0.08)" }}>
+            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+              Записей пока нет. Добавь первую — агент начнёт отслеживать динамику.
+            </p>
+          </div>
         )}
 
         {diaryEntries.map((entry) => (

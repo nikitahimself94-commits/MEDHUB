@@ -13,6 +13,10 @@ export async function createMedication(formData: FormData) {
   const endDate = (formData.get("end_date") as string) || null;
   const active = formData.get("active") === "true";
   const notes = (formData.get("notes") as string) || null;
+  const purpose = (formData.get("purpose") as string) || "";
+  const effect = (formData.get("effect") as string) || "";
+  const sideEffects = (formData.get("side_effects") as string) || "";
+  const therapyChanges = (formData.get("therapy_changes") as string) || "";
 
   const { error } = await supabase.from("medications").insert({
     patient_id: patientId,
@@ -24,6 +28,10 @@ export async function createMedication(formData: FormData) {
     end_date: endDate,
     active,
     notes,
+    purpose,
+    effect,
+    side_effects: sideEffects,
+    therapy_changes: therapyChanges,
   });
 
   if (error) {
@@ -85,6 +93,10 @@ export async function updateMedication(
     start_date: string;
     end_date: string | null;
     notes: string | null;
+    purpose: string;
+    effect: string;
+    side_effects: string;
+    therapy_changes: string;
   }
 ) {
   const { patientId, supabase } = await getSessionPatient();
@@ -98,6 +110,10 @@ export async function updateMedication(
       start_date: fields.start_date,
       end_date: fields.end_date,
       notes: fields.notes,
+      purpose: fields.purpose,
+      effect: fields.effect,
+      side_effects: fields.side_effects,
+      therapy_changes: fields.therapy_changes,
     })
     .eq("id", id)
     .eq("patient_id", patientId);

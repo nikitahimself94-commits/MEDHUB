@@ -20,8 +20,8 @@ export function symptomsStateBlock(ctx: SymptomsContext): SymptomsStateBlock {
   // No diary entries at all in 30 days
   if (diaryEntriesLast30 === 0) {
     return {
-      line: "Симптомов пока нет — нужны записи в дневнике.",
-      supporting: "Когда вы отмечаете симптомы в дневнике, они появляются здесь на карте.",
+      line: "Мне нужны симптомы, чтобы начать искать паттерны.",
+      supporting: "Добавь запись в дневник с отметкой симптома — он появится на карте. Чем чаще фиксируешь, тем точнее я нахожу повторы.",
     };
   }
 
@@ -29,34 +29,36 @@ export function symptomsStateBlock(ctx: SymptomsContext): SymptomsStateBlock {
   if (uniqueSymptoms30 === 0) {
     return {
       line: "Записи в дневнике есть, но симптомы в них не отмечены.",
-      supporting: "Если добавите симптомы при следующей записи — они появятся на карте.",
+      supporting: "При следующей записи добавь хотя бы один симптом — и я начну строить карту.",
     };
   }
 
   // Has symptoms only in 30-day window, not in recent 14
   if (uniqueSymptoms14 === 0 && uniqueSymptoms30 > 0) {
     return {
-      line: `За 30 дней отмечено ${formatSymptomCount(uniqueSymptoms30)}. В последние 14 дней — тихо.`,
+      line: `За 30 дней я зафиксировал ${formatSymptomCount(uniqueSymptoms30)}. Последние 14 дней — тишина.`,
+      supporting: "Если симптомы вернутся — добавь запись, и паттерн станет видимым.",
     };
   }
 
   // Active symptoms in 14-day window
   if (uniqueSymptoms14 === 1) {
     return {
-      line: "Один симптом за последние 14 дней. Слежу, повторится ли.",
+      line: "Один симптом за 14 дней. Слежу, повторится ли.",
+      supporting: "Одиночный сигнал пока мало говорит — продолжай фиксировать.",
     };
   }
 
   if (uniqueSymptoms14 <= 3) {
     return {
-      line: `${uniqueSymptoms14} симптома за 14 дней. Карта показывает, когда именно.`,
+      line: `${uniqueSymptoms14} симптома за 14 дней. Вижу, когда и как часто они появляются.`,
     };
   }
 
   // 4+ symptoms
   return {
-    line: `${uniqueSymptoms14} симптомов за 14 дней. Если что-то повторяется — это видно на карте.`,
-    supporting: "Повторяющиеся паттерны стоит показать врачу.",
+    line: `${uniqueSymptoms14} симптомов за 14 дней. Если что-то повторяется — это уже видно на карте.`,
+    supporting: "Повторяющиеся кластеры стоит показать врачу.",
   };
 }
 

@@ -14,6 +14,10 @@ export function EditMedicationForm({ med }: { med: Medication }) {
   const [startDate, setStartDate] = useState(med.start_date);
   const [endDate, setEndDate] = useState(med.end_date ?? "");
   const [notes, setNotes] = useState(med.notes ?? "");
+  const [purpose, setPurpose] = useState(med.purpose ?? "");
+  const [effect, setEffect] = useState(med.effect ?? "");
+  const [sideEffects, setSideEffects] = useState(med.side_effects ?? "");
+  const [therapyChanges, setTherapyChanges] = useState(med.therapy_changes ?? "");
   const [error, setError] = useState("");
 
   function handleOpen() {
@@ -23,6 +27,10 @@ export function EditMedicationForm({ med }: { med: Medication }) {
     setStartDate(med.start_date);
     setEndDate(med.end_date ?? "");
     setNotes(med.notes ?? "");
+    setPurpose(med.purpose ?? "");
+    setEffect(med.effect ?? "");
+    setSideEffects(med.side_effects ?? "");
+    setTherapyChanges(med.therapy_changes ?? "");
     setError("");
     setOpen(true);
   }
@@ -48,6 +56,10 @@ export function EditMedicationForm({ med }: { med: Medication }) {
           start_date: startDate,
           end_date: endDate || null,
           notes: notes.trim() || null,
+          purpose: purpose.trim(),
+          effect: effect.trim(),
+          side_effects: sideEffects.trim(),
+          therapy_changes: therapyChanges.trim(),
         });
         setOpen(false);
       } catch (err: unknown) {
@@ -107,6 +119,26 @@ export function EditMedicationForm({ med }: { med: Medication }) {
       <div>
         <label className={labelClass} style={labelStyle}>Заметка</label>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} style={inputStyle} />
+      </div>
+
+      <div>
+        <label className={labelClass} style={labelStyle}>Назначение</label>
+        <input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Для снижения давления" className={inputClass} style={inputStyle} />
+      </div>
+
+      <div>
+        <label className={labelClass} style={labelStyle}>Эффект</label>
+        <input value={effect} onChange={(e) => setEffect(e.target.value)} className={inputClass} style={inputStyle} />
+      </div>
+
+      <div>
+        <label className={labelClass} style={labelStyle}>Побочные эффекты</label>
+        <input value={sideEffects} onChange={(e) => setSideEffects(e.target.value)} className={inputClass} style={inputStyle} />
+      </div>
+
+      <div>
+        <label className={labelClass} style={labelStyle}>Изменения в терапии</label>
+        <textarea value={therapyChanges} onChange={(e) => setTherapyChanges(e.target.value)} rows={2} className={inputClass} style={inputStyle} />
       </div>
 
       <div className="flex items-center gap-3">
